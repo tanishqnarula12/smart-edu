@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens (§3).
+ *
+ * Every colour in the app resolves through one of these, so light and dark
+ * mode stay consistent and there is exactly one place to re-theme.
+ */
+@layer base {
+  :root {
+    --surface: 255 255 255;
+    --surface-raised: 255 255 255;
+    --surface-sunken: 248 250 252;
+
+    --ink: 15 23 42;
+    --ink-muted: 71 85 105;
+    --ink-subtle: 148 163 184;
+
+    --line: 226 232 240;
+  }
+
+  .dark {
+    --surface: 15 23 42;
+    --surface-raised: 30 41 59;
+    --surface-sunken: 2 6 23;
+
+    --ink: 241 245 249;
+    --ink-muted: 148 163 184;
+    --ink-subtle: 100 116 139;
+
+    --line: 51 65 85;
+  }
+
+  * {
+    @apply border-line;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-sunken text-ink font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    /* Never allow the page itself to scroll sideways (§73). */
+    overflow-x: hidden;
+  }
+
+  /* A visible, consistent focus ring — keyboard navigation must be usable. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-surface;
+  }
+
+  /* Respect a user's reduced-motion preference. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Scrollbars: unobtrusive but present. */
+  .scrollbar-slim::-webkit-scrollbar {
+    @apply h-1.5 w-1.5;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-subtle/30;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb:hover {
+    @apply bg-ink-subtle/50;
+  }
+
+  /* Loading skeleton shimmer (§48). */
+  .skeleton {
+    @apply relative overflow-hidden rounded-md bg-ink-subtle/15;
+  }
+  .skeleton::after {
+    @apply absolute inset-0 -translate-x-full;
+    content: '';
+    background-image: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0),
+      rgb(255 255 255 / 0.25),
+      rgb(255 255 255 / 0)
+    );
+    animation: shimmer 1.6s infinite;
+  }
+  .dark .skeleton::after {
+    background-image: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0),
+      rgb(255 255 255 / 0.06),
+      rgb(255 255 255 / 0)
+    );
+  }
+
+  /* Recharts renders raw SVG; these keep it on-theme without prop drilling. */
+  .recharts-cartesian-grid line {
+    @apply stroke-line;
+  }
+  .recharts-text {
+    @apply fill-ink-muted text-xs;
+  }
+  .recharts-default-tooltip {
+    @apply !rounded-xl !border-line !bg-surface-raised !shadow-popover;
+  }
+}
+
+@layer utilities {
+  /* Tables and wide content scroll inside their own container (§47). */
+  .scroll-x {
+    @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide content visually but keep it for screen readers. */
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    @apply sr-only;
+  }
+}
+
+/* Print: reports should come out clean (§32). */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .print-full {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
