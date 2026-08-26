@@ -32,6 +32,9 @@ coverage/
 # local-only reference project (not part of this app; contains its own .env)
 chatbot/
 
+# personal deployment notes — contains real database credentials
+deploymentused.md
+
 # editors & OS
 .vscode/*
 !.vscode/extensions.json

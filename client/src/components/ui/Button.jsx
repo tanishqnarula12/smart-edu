@@ -19,6 +19,9 @@ const VARIANTS = {
   success: 'bg-success-600 text-white shadow-sm hover:bg-success-700',
   outline: 'border border-brand-600 text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40',
   subtle: 'bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-950/40 dark:text-brand-300',
+  // For use on a permanently-dark surface (e.g. the landing hero) that
+  // doesn't follow the light/dark theme toggle — never theme tokens.
+  inverse: 'border border-white/15 bg-white/10 text-white backdrop-blur hover:bg-white/20 active:bg-white/25',
 };
 
 const SIZES = {

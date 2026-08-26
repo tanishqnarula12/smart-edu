@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../components/ui/Button.jsx';
+import { HeroScene } from '../components/landing/HeroScene.jsx';
 import { cn } from '../utils/cn.js';
 
 /** Landing page (§71). */
@@ -89,55 +90,7 @@ export function Landing() {
       </header>
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <div
-          className="pointer-events-none absolute left-1/2 top-0 h-[36rem] w-[52rem] -translate-x-1/2 rounded-full bg-brand-500/10 blur-3xl"
-          aria-hidden="true"
-        />
-
-        <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-20 text-center sm:pt-28">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 dark:border-brand-900 dark:bg-brand-950/50 dark:text-brand-300">
-            <Sparkles size={12} aria-hidden="true" />
-            AI-powered academic management
-          </span>
-
-          <h1 className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-ink sm:text-5xl lg:text-6xl">
-            Smarter management.
-            <br />
-            <span className="bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent">
-              Better insights. Personalised education.
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-ink-muted">
-            Smart Edu unifies attendance, marks, assignments and analytics into one place —
-            with an AI assistant for every role that respects exactly who is allowed to see what.
-          </p>
-
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button to="/register" size="lg" iconRight={ArrowRight}>
-              Create an account
-            </Button>
-            <Button to="/login" variant="secondary" size="lg">
-              Sign in to your dashboard
-            </Button>
-          </div>
-
-          <dl className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
-            {[
-              { value: '4', label: 'Connected roles' },
-              { value: '25+', label: 'API modules' },
-              { value: '100%', label: 'Backend-enforced access' },
-              { value: '0', label: 'Plaintext passwords' },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <dt className="text-2xl font-bold text-ink sm:text-3xl">{stat.value}</dt>
-                <dd className="mt-1 text-xs text-ink-muted">{stat.label}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+      <HeroScene />
 
       {/* ── Problem / solution ─────────────────────────────────────────── */}
       <section className="border-y border-line bg-surface-sunken py-20">

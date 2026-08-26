@@ -82,6 +82,36 @@ export default {
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
+        // Landing page hero scene — its own set, kept separate from the ones
+        // above so tuning the entrance timing never touches shared UI.
+        'content-reveal': {
+          from: { opacity: '0', transform: 'translateY(14px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'word-in': {
+          '0%': { opacity: '0', transform: 'translateY(22px) scale(0.94)', filter: 'blur(6px)' },
+          '60%': { opacity: '0.85', transform: 'translateY(4px) scale(0.99)', filter: 'blur(1px)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)', filter: 'blur(0)' },
+        },
+        'grid-line-draw': {
+          '0%': { strokeDashoffset: '1000', opacity: '0' },
+          '50%': { opacity: '0.35' },
+          '100%': { strokeDashoffset: '0', opacity: '0.18' },
+        },
+        'dot-pulse': {
+          '0%, 100%': { opacity: '0.15', transform: 'scale(1)' },
+          '50%': { opacity: '0.45', transform: 'scale(1.2)' },
+        },
+        'particle-float': {
+          '0%, 100%': { transform: 'translate(0, 0)', opacity: '0.2' },
+          '25%': { transform: 'translate(4px, -10px)', opacity: '0.6' },
+          '50%': { transform: 'translate(-3px, -5px)', opacity: '0.35' },
+          '75%': { transform: 'translate(6px, -14px)', opacity: '0.7' },
+        },
+        'ripple-out': {
+          '0%': { transform: 'translate(-50%, -50%) scale(0.4)', opacity: '0.55' },
+          '100%': { transform: 'translate(-50%, -50%) scale(9)', opacity: '0' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 160ms ease-out',
@@ -89,6 +119,12 @@ export default {
         'slide-in-right': 'slide-in-right 240ms cubic-bezier(0.16, 1, 0.3, 1)',
         'slide-in-left': 'slide-in-left 240ms cubic-bezier(0.16, 1, 0.3, 1)',
         'scale-in': 'scale-in 140ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'content-reveal': 'content-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'word-in': 'word-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'grid-line-draw': 'grid-line-draw 0.9s ease-out forwards',
+        'dot-pulse': 'dot-pulse 3s ease-in-out infinite',
+        'particle-float': 'particle-float 5s ease-in-out infinite',
+        'ripple-out': 'ripple-out 0.8s ease-out forwards',
       },
     },
   },
