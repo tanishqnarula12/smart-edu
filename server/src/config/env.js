@@ -60,6 +60,11 @@ export const config = {
   },
 
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  // Set true only when the client and API are on different registrable
+  // domains (e.g. a Vercel client + a Render API) — the refresh cookie needs
+  // SameSite=None to survive that cross-origin request at all. Leave false
+  // for a same-host deployment; 'strict' is the tighter default there.
+  crossSiteCookies: bool(process.env.CROSS_SITE_COOKIES, false),
 
   rateLimit: {
     windowMs: int(process.env.RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000),

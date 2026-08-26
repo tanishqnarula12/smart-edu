@@ -25,8 +25,11 @@ export const setUnauthorizedHandler = (handler) => {
   onUnauthorized = handler;
 };
 
+// Same-origin '/api' works for a combined deploy or the Vite dev proxy.
+// A split deploy (client on Vercel, API elsewhere) sets VITE_API_URL at
+// build time to the API's full origin, e.g. https://smart-edu-api.onrender.com/api
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   withCredentials: true,
   timeout: 30_000,
   headers: { 'Content-Type': 'application/json' },

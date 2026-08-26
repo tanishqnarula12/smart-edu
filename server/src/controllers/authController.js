@@ -18,8 +18,8 @@ const REFRESH_COOKIE = 'refreshToken';
 function refreshCookieOptions() {
   return {
     httpOnly: true,
-    secure: config.isProduction,
-    sameSite: config.isProduction ? 'strict' : 'lax',
+    secure: config.isProduction || config.crossSiteCookies,
+    sameSite: config.crossSiteCookies ? 'none' : config.isProduction ? 'strict' : 'lax',
     maxAge: ttlToMs(config.auth.refreshTokenTtl),
     path: '/api/auth',
   };
