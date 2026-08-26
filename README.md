@@ -1,4 +1,4 @@
-# Smart Edu
+  # Smart Edu
 
 **Smarter management. Better insights. Personalised education.**
 
@@ -503,6 +503,11 @@ than plausible-sounding filler.
 
 ```env
 AI_PROVIDER=mock          # default — no key needed
+
+# AI_PROVIDER=gemini
+# AI_API_KEY=...            # free key from https://aistudio.google.com/apikey
+# AI_MODEL=                 # leave empty — defaults to gemini-flash-lite-latest
+
 # AI_PROVIDER=openai
 # AI_API_KEY=sk-...
 # AI_MODEL=gpt-4o-mini
@@ -514,6 +519,45 @@ AI_PROVIDER=mock          # default — no key needed
 
 If a provider is configured but the key is missing, or the provider call fails,
 the request **degrades to the built-in assistant** rather than showing an error.
+When that happens to a specific reply mid-conversation — most commonly a
+Gemini free-tier quota limit — the chat UI marks that message "· built-in
+assistant" rather than silently swapping providers without saying so.
+
+**Gemini is the recommended free option** — Google AI Studio issues keys with
+no billing setup required. It runs on a strict free-tier quota (requests per
+minute and per day), so this integration is deliberately token-frugal:
+
+- Defaults to `gemini-flash-lite-latest`, the lite tier with the most
+  generous free quota in the family. It's an alias, not a dated model name,
+  so it keeps working as Google retires specific versions underneath it.
+- The database context sent to a live provider is capped and truncated
+  (`renderContext` in `aiService.js`) — the mock provider still gets the
+  full picture, since only a live call costs tokens.
+- Conversation history sent per request is capped to the last 6 turns and
+  each message is truncated, rather than replaying an entire long chat.
+- Chat replies default to a 700-token budget; generators (quiz/assignment)
+  use a leaner budget than earlier drafts of this integration did.
+- A 429 (quota exceeded) or an empty/safety-blocked response both fall back
+  to the built-in assistant immediately rather than retrying and burning
+  more of the daily quota.
+
+**Optional third tier — a local model via Ollama.** When a free-tier quota is
+genuinely exhausted for the day, degrading to the templated mock is safe but
+loses the free-form conversational quality. Set these to try a model running
+on your own machine first instead:
+
+```env
+AI_OLLAMA_FALLBACK=true
+OLLAMA_MODEL=llama3.2   # whatever you've pulled — ollama pull llama3.2
+```
+
+Requires [Ollama](https://ollama.com) installed and running locally. It has
+no quota to exhaust and needs no internet once the model is pulled, which is
+exactly the property a cloud free tier lacks. The chain is
+**Gemini → Ollama → mock**: each tier is tried only if the one before it
+actually fails, and a message answered by the fallback is marked
+"· built-in assistant" (or, when Ollama answered, its own model name) in the
+chat UI — nothing swaps silently.
 
 **Agents** — `server/src/ai/`
 
@@ -568,6 +612,12 @@ Coverage:
 ---
 
 ## 18. Deployment
+
+> **Full walkthrough:** [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) covers
+> managed Postgres options, a step-by-step Render/Railway deploy, Docker for
+> a VPS, environment variables, running migrations against production, and
+> creating your first real admin account. The summary below is the quick
+> version.
 
 **Build**
 

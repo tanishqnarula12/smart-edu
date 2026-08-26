@@ -64,7 +64,7 @@ export async function studyPlan({ user, days = 14 }) {
     context,
     agent: 'student',
     temperature: 0.4,
-    maxTokens: 1600,
+    maxTokens: 1100,
   });
 
   // The mock provider does not write plans, so build a real one from the data.

@@ -14,6 +14,13 @@ import { config } from '../config/env.js';
 const DEFAULT_MODELS = {
   openai: 'gpt-4o-mini',
   anthropic: 'claude-sonnet-4-5',
+  // The "-latest" alias tracks whichever lite flash model Google currently
+  // serves, so this stops working only if Google removes the whole tier —
+  // not every time they retire one dated model in favour of the next
+  // (gemini-2.0-flash and gemini-1.5-flash both 404 as of this writing).
+  // "Lite" is deliberate: it carries the most generous free-tier quota of
+  // the family, which is the constraint this integration is optimised for.
+  gemini: 'gemini-flash-lite-latest',
 };
 
 class AiError extends Error {
@@ -250,17 +257,138 @@ async function anthropicComplete({ messages, system, temperature, maxTokens }) {
   };
 }
 
+// ─────────────────────────── GEMINI PROVIDER ──────────────────────────────
+
+/**
+ * Google's Generative Language API.
+ *
+ * Two things distinguish it from the OpenAI/Anthropic shapes above:
+ *  - The system prompt is its own top-level field, not a message in the list.
+ *  - Roles are "user" / "model", not "user" / "assistant".
+ *
+ * The API key goes in the `x-goog-api-key` header rather than the URL, so it
+ * never ends up in a logged request line.
+ */
+async function geminiComplete({ messages, system, temperature, maxTokens }) {
+  const baseUrl = config.ai.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
+  const model = config.ai.model || DEFAULT_MODELS.gemini;
+
+  const response = await fetch(`${baseUrl}/models/${model}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.ai.apiKey },
+    body: JSON.stringify({
+      systemInstruction: system ? { parts: [{ text: system }] } : undefined,
+      contents: messages.map((message) => ({
+        role: message.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: message.content }],
+      })),
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new AiError(`Gemini request failed (${response.status}): ${detail.slice(0, 200)}`, {
+      // A quota-exhausted free tier returns 429 — that is exactly the
+      // condition this integration is built to degrade gracefully from.
+      retryable: response.status >= 500 || response.status === 429,
+    });
+  }
+
+  const data = await response.json();
+  const candidate = data.candidates?.[0];
+
+  // A safety block or an empty generation leaves `candidates` empty rather
+  // than erroring — treat that as a failure so it falls back to the mock
+  // provider instead of returning a blank chat bubble.
+  if (!candidate) {
+    const reason = data.promptFeedback?.blockReason ?? 'no candidates returned';
+    throw new AiError(`Gemini returned nothing (${reason})`, { retryable: false });
+  }
+
+  return {
+    content: candidate.content?.parts?.map((part) => part.text).join('') ?? '',
+    provider: 'gemini',
+    model,
+    usage: {
+      promptTokens: data.usageMetadata?.promptTokenCount ?? 0,
+      completionTokens: data.usageMetadata?.candidatesTokenCount ?? 0,
+    },
+  };
+}
+
+// ─────────────────────────── OLLAMA PROVIDER ──────────────────────────────
+
+/**
+ * A local model via Ollama (https://ollama.com) — a second tier between a
+ * failed cloud call and the templated mock. Opt-in via `AI_OLLAMA_FALLBACK`.
+ *
+ * The appeal here is specific: a free-tier cloud quota fails in exactly the
+ * way that makes "just retry" useless (the daily limit is the daily limit),
+ * but a local model has no quota at all. Requires `ollama pull <model>` and
+ * the Ollama service running locally — if it isn't, this fails fast and the
+ * caller falls through to the mock provider same as always.
+ */
+async function ollamaComplete({ messages, system, temperature, maxTokens }) {
+  const baseUrl = config.ai.ollamaBaseUrl;
+  const model = config.ai.ollamaModel;
+
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [
+        ...(system ? [{ role: 'system', content: system }] : []),
+        ...messages.map((message) => ({ role: message.role, content: message.content })),
+      ],
+      stream: false,
+      options: { temperature, num_predict: maxTokens },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new AiError(`Ollama request failed (${response.status}): ${detail.slice(0, 200)}`, {
+      retryable: false,
+    });
+  }
+
+  const data = await response.json();
+  return {
+    content: data.message?.content ?? '',
+    provider: 'ollama',
+    model,
+    usage: {
+      promptTokens: data.prompt_eval_count ?? 0,
+      completionTokens: data.eval_count ?? 0,
+    },
+  };
+}
+
 const PROVIDERS = {
   mock: mockComplete,
   openai: openaiComplete,
   anthropic: anthropicComplete,
+  gemini: geminiComplete,
+  ollama: ollamaComplete,
 };
 
 // ────────────────────────────── GATEWAY ───────────────────────────────────
 
+// Ollama authenticates by "is it running on this machine", not a key — every
+// other live provider needs one. Centralised here so the three places that
+// used to check `config.ai.apiKey` directly can't drift out of sync on this.
+const needsApiKey = (provider) => provider !== 'mock' && provider !== 'ollama';
+
 /** Is a real provider actually usable right now? */
 export function isLiveProvider() {
-  return config.ai.provider !== 'mock' && Boolean(config.ai.apiKey);
+  const provider = config.ai.provider;
+  if (provider === 'mock') return false;
+  return needsApiKey(provider) ? Boolean(config.ai.apiKey) : true;
 }
 
 export function providerInfo() {
@@ -268,7 +396,8 @@ export function providerInfo() {
     provider: config.ai.provider,
     live: isLiveProvider(),
     model: config.ai.model || DEFAULT_MODELS[config.ai.provider] || 'smart-edu-mock',
-    fallbackActive: config.ai.provider !== 'mock' && !config.ai.apiKey,
+    fallbackActive: needsApiKey(config.ai.provider) && !config.ai.apiKey,
+    ollamaFallback: config.ai.provider !== 'ollama' && config.ai.ollamaFallback,
   };
 }
 
@@ -286,12 +415,18 @@ export async function complete({
   context = null,
   agent = 'student',
   temperature = 0.4,
-  maxTokens = 1200,
+  // Deliberately lean: the live check that validated this integration got a
+  // complete, well-formed answer in 100 output tokens. 700 leaves headroom
+  // for a longer explanation without inviting the model to pad — every
+  // wasted token is quota on a free tier, and callers that genuinely need
+  // more (the study plan generator) pass their own value.
+  maxTokens = 700,
 }) {
   const provider = config.ai.provider;
 
   // A configured provider with no key falls back rather than failing (§58).
-  if (provider !== 'mock' && !config.ai.apiKey) {
+  // Ollama is exempt — it authenticates by running locally, not by key.
+  if (needsApiKey(provider) && !config.ai.apiKey) {
     console.warn(`[ai] AI_PROVIDER=${provider} but AI_API_KEY is empty — using the mock provider.`);
     return { ...mockComplete({ messages, context, agent }), fallback: true };
   }
@@ -306,30 +441,69 @@ export async function complete({
     return mockComplete({ messages, context, agent });
   }
 
+  // Only live providers pay for context in tokens, so only they get the
+  // trimmed rendering — the mock provider keeps working from the full
+  // `context.facts` array regardless.
   const systemPrompt = context ? `${system}\n\n${renderContext(context)}` : system;
+  const trimmedMessages = trimHistory(messages);
 
   try {
-    return await handler({ messages, system: systemPrompt, temperature, maxTokens });
-  } catch (error) {
-    // A provider outage degrades to the grounded mock answer instead of
-    // showing the user an error page.
-    console.error('[ai] provider call failed, falling back to mock:', error.message);
+    return await handler({ messages: trimmedMessages, system: systemPrompt, temperature, maxTokens });
+  } catch (primaryError) {
+    console.error(`[ai] ${provider} call failed:`, primaryError.message);
+
+    // Optional second tier before giving up to the mock: a local model on
+    // the operator's own machine. It has no quota to exhaust, which is
+    // exactly the failure mode a free-tier cloud provider hits — "try
+    // again" doesn't help when the problem is a daily limit, but a local
+    // model sidesteps the limit entirely. Skipped when Ollama itself is the
+    // primary provider (nothing to fall back to) or the flag is off.
+    if (config.ai.ollamaFallback && provider !== 'ollama') {
+      try {
+        const result = await ollamaComplete({
+          messages: trimmedMessages,
+          system: systemPrompt,
+          temperature,
+          maxTokens,
+        });
+        console.warn(`[ai] ${provider} unavailable — answered by local Ollama (${result.model})`);
+        return {
+          ...result,
+          fallback: true,
+          fallbackReason: `${provider} unavailable — answered by a local model instead`,
+        };
+      } catch (ollamaError) {
+        console.error('[ai] Ollama fallback also unavailable:', ollamaError.message);
+      }
+    }
+
+    // Both live tiers are unavailable — degrade to the grounded mock answer
+    // instead of showing the user an error page.
     return {
       ...mockComplete({ messages, context, agent }),
       fallback: true,
-      fallbackReason: error.message,
+      fallbackReason: primaryError.message,
     };
   }
 }
 
 /**
- * Turn the structured context into prompt text.
+ * Turn the structured context into prompt text — for a LIVE provider.
  *
  * The instruction line matters: it tells the model that this block is the only
  * data it may use, which is the prompt-side half of the authorization boundary
  * enforced in contextService.js.
+ *
+ * The agent builders in contextService.js can produce a genuinely large fact
+ * list — an admin context walks every department and the last several months
+ * of trend data. That richness is free for the mock provider, which just
+ * narrates from the array, but every line here is billed input tokens on a
+ * live provider. `maxFacts` keeps the prompt bounded regardless of how much
+ * the builder assembled; the facts arrays are already ordered by relevance
+ * (worst attendance first, lowest scores first), so truncating takes the
+ * least useful tail, not a random sample.
  */
-export function renderContext(context) {
+export function renderContext(context, { maxFacts = 22, factCharLimit = 200, docCharLimit = 350 } = {}) {
   const lines = [
     '## Authorised data',
     'The block below is the ONLY information about this institution you may use.',
@@ -343,18 +517,41 @@ export function renderContext(context) {
   if (context.role) lines.push(`Asking as: ${context.role}`);
   lines.push('');
 
-  for (const fact of context.facts ?? []) {
-    lines.push(`- [${fact.topic}] ${fact.text}`);
+  const facts = context.facts ?? [];
+  const shown = facts.slice(0, maxFacts);
+
+  for (const fact of shown) {
+    const text = fact.text.length > factCharLimit ? `${fact.text.slice(0, factCharLimit)}…` : fact.text;
+    lines.push(`- [${fact.topic}] ${text}`);
+  }
+  if (facts.length > shown.length) {
+    lines.push(`- (${facts.length - shown.length} more record(s) omitted for brevity)`);
   }
 
   if (context.documents?.length) {
     lines.push('', '## Retrieved study material');
     for (const doc of context.documents) {
-      lines.push(`- (${doc.title}) ${doc.content.slice(0, 600)}`);
+      lines.push(`- (${doc.title}) ${doc.content.slice(0, docCharLimit)}`);
     }
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Cap conversation history sent to a live provider: the last few turns, each
+ * truncated. A long-running chat's early messages add tokens to every
+ * subsequent request without adding much — the model answers the current
+ * question, not a transcript of the whole conversation.
+ */
+export function trimHistory(messages, { keep = 6, maxChars = 500 } = {}) {
+  return messages.slice(-keep).map((message) => ({
+    role: message.role,
+    content:
+      message.content.length > maxChars
+        ? `${message.content.slice(0, maxChars)}…`
+        : message.content,
+  }));
 }
 
 export { AiError };

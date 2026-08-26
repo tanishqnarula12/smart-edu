@@ -72,6 +72,14 @@ export const config = {
     apiKey: process.env.AI_API_KEY || '',
     model: process.env.AI_MODEL || '',
     baseUrl: process.env.AI_BASE_URL || '',
+    // Optional second tier, tried between a failed live provider and the
+    // templated mock: a local model on the operator's own machine via
+    // Ollama. Off by default — enabling it costs nothing when Ollama isn't
+    // running (the attempt just fails fast), but there's no reason to make
+    // every request pay even that cost for people who never installed it.
+    ollamaFallback: bool(process.env.AI_OLLAMA_FALLBACK, false),
+    ollamaBaseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+    ollamaModel: process.env.OLLAMA_MODEL || 'llama3.2',
   },
 
   vector: {

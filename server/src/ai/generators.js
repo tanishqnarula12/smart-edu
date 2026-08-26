@@ -36,7 +36,10 @@ async function subjectName(subjectId) {
 }
 
 /** Ask a live model for JSON, and fall back cleanly if it returns anything else. */
-async function generateWithModel({ system, prompt, maxTokens = 2500 }) {
+// A structured JSON payload for ~10 questions fits comfortably under this —
+// leaner than before so one generation doesn't eat a disproportionate slice
+// of a free-tier daily token budget.
+async function generateWithModel({ system, prompt, maxTokens = 1800 }) {
   const response = await complete({
     messages: [{ role: 'user', content: prompt }],
     system,

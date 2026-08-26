@@ -86,6 +86,7 @@ export const chat = asyncHandler(async (req, res) => {
         provider: response.provider,
         model: response.model,
         fallback: response.fallback ?? false,
+        fallbackReason: response.fallbackReason,
       }),
     ]
   );
@@ -99,6 +100,7 @@ export const chat = asyncHandler(async (req, res) => {
       provider: response.provider,
       model: response.model,
       fallback: response.fallback ?? false,
+      fallbackReason: response.fallbackReason,
       grounded: response.grounded ?? true,
       sources: response.sources ?? [],
       context: response.context,

@@ -77,6 +77,7 @@ export function AIChat({ contextParams = {}, className, title, description, comp
             content: data.message,
             provider: data.provider,
             fallback: data.fallback,
+            fallbackReason: data.fallbackReason,
             sources: data.sources,
           },
         ]);
@@ -138,6 +139,7 @@ export function AIChat({ contextParams = {}, className, title, description, comp
           content: message.content,
           provider: message.metadata?.provider,
           fallback: message.metadata?.fallback,
+          fallbackReason: message.metadata?.fallbackReason,
         }))
       );
     } catch (error) {
@@ -349,6 +351,21 @@ export function AIChat({ contextParams = {}, className, title, description, comp
                         <span className="text-[11px] text-ink-subtle">
                           · {message.sources.length} source
                           {message.sources.length === 1 ? '' : 's'}
+                        </span>
+                      )}
+
+                      {/* This specific reply degraded from the configured provider — usually
+                          a live provider's quota running out mid-conversation. Surfaced
+                          per-message rather than once, since the header badge reflects
+                          the provider's configured state, not what actually answered.
+                          Ollama answering is a genuinely different (better) outcome than
+                          the templated mock, so the two get distinct labels. */}
+                      {message.fallback && (
+                        <span
+                          className="text-[11px] text-warning-600"
+                          title={message.fallbackReason || 'The configured AI provider was unavailable for this reply'}
+                        >
+                          · {message.provider === 'ollama' ? 'local model' : 'built-in assistant'}
                         </span>
                       )}
                     </div>

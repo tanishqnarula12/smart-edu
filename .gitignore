@@ -29,6 +29,9 @@ server/uploads/*
 coverage/
 .nyc_output/
 
+# local-only reference project (not part of this app; contains its own .env)
+chatbot/
+
 # editors & OS
 .vscode/*
 !.vscode/extensions.json
