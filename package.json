@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Smart Edu — AI-powered School/College Management Platform",
+  "type": "module",
   "workspaces": [
     "client",
     "server"

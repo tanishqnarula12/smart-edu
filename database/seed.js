@@ -13,10 +13,13 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 import bcrypt from 'bcryptjs';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { withTransaction, closePool } from '../server/src/db/pool.js';
 import { config } from '../server/src/config/env.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DEMO_PASSWORD = config.seed.demoPassword;
 const ACADEMIC_YEAR = '2025-26';
@@ -108,24 +111,33 @@ const iso = (date) => date.toISOString().slice(0, 10);
  * submissions tell a consistent story rather than looking like noise. A
  * dashboard is only convincing if the struggling student is struggling
  * everywhere.
+ *
+ * Index 0 is the documented demo login (student@smartedu.demo), so it gets a
+ * deliberately *representative* profile — good but not flawless, with one
+ * weaker subject and a little outstanding work. A demo account showing a CGPA
+ * of 0 reads as a broken app even when the number is correct.
  */
+const ARCHETYPES = {
+  demo: { label: 'demo', attendance: 0.88, ability: 0.74, diligence: 0.85, trend: 0.03 },
+  top: { label: 'top', attendance: 0.96, ability: 0.88, diligence: 0.95, trend: 0.02 },
+  strong: { label: 'strong', attendance: 0.91, ability: 0.76, diligence: 0.85, trend: 0.02 },
+  average: { label: 'average', attendance: 0.84, ability: 0.63, diligence: 0.72, trend: 0.0 },
+  improving: { label: 'improving', attendance: 0.85, ability: 0.55, diligence: 0.75, trend: 0.09 },
+  struggling: { label: 'struggling', attendance: 0.72, ability: 0.46, diligence: 0.55, trend: -0.05 },
+  atRisk: { label: 'at-risk', attendance: 0.58, ability: 0.38, diligence: 0.35, trend: -0.07 },
+};
+
 function studentArchetype(index) {
-  if (index % 10 === 0) {
-    return { label: 'at-risk', attendance: 0.58, ability: 0.35, diligence: 0.35, trend: -0.12 };
-  }
-  if (index % 10 === 1) {
-    return { label: 'struggling', attendance: 0.72, ability: 0.46, diligence: 0.55, trend: -0.06 };
-  }
-  if (index % 7 === 0) {
-    return { label: 'improving', attendance: 0.85, ability: 0.58, diligence: 0.75, trend: 0.12 };
-  }
-  if (index % 5 === 0) {
-    return { label: 'top', attendance: 0.96, ability: 0.88, diligence: 0.95, trend: 0.03 };
-  }
-  if (index % 3 === 0) {
-    return { label: 'strong', attendance: 0.91, ability: 0.76, diligence: 0.85, trend: 0.02 };
-  }
-  return { label: 'average', attendance: 0.84, ability: 0.63, diligence: 0.72, trend: 0.0 };
+  if (index === 0) return ARCHETYPES.demo;
+
+  // A realistic spread across the rest of the cohort: a handful genuinely at
+  // risk, a handful excelling, most in the middle.
+  if (index % 10 === 3) return ARCHETYPES.atRisk;
+  if (index % 10 === 7) return ARCHETYPES.struggling;
+  if (index % 7 === 0) return ARCHETYPES.improving;
+  if (index % 5 === 0) return ARCHETYPES.top;
+  if (index % 3 === 0) return ARCHETYPES.strong;
+  return ARCHETYPES.average;
 }
 
 /** Normally-distributed score around a mean, clamped to [0, 1]. */
@@ -137,15 +149,42 @@ function scoreAround(mean, spread = 0.12) {
 // ─────────────────────────────── SEEDING ──────────────────────────────────
 
 async function clearDemoData(client) {
-  // Truncating users cascades through every dependent table; the reference
-  // data from seed.sql (permissions, settings) is deliberately left alone.
-  await client.query(`
-    TRUNCATE
-      users, departments, classes, subjects, class_subjects,
-      notices, documents, document_chunks, generated_content,
-      fee_structures, exams, audit_logs
-    RESTART IDENTITY CASCADE
-  `);
+  /*
+   * DELETE rather than TRUNCATE ... CASCADE.
+   *
+   * TRUNCATE CASCADE also truncates every table holding a foreign key to the
+   * target — which silently wipes `settings`, since `settings.updated_by`
+   * references `users`. DELETE respects the per-column rules instead
+   * (ON DELETE CASCADE for profiles and academic rows, ON DELETE SET NULL for
+   * `settings.updated_by`), so the reference data from seed.sql survives.
+   *
+   * Order matters: users first, so the SET NULL references clear before the
+   * rows they point at are removed.
+   *
+   * This list must cover every demo table that *survives* deleting a user —
+   * anything whose user reference is ON DELETE SET NULL rather than CASCADE.
+   * `complaints` is the easy one to miss: an anonymous complaint has no
+   * student_id at all, and a named one is nulled rather than removed, so the
+   * rows (and their unique tracking codes) outlive the accounts.
+   */
+  const order = [
+    'users',
+    'complaints',
+    'notices',
+    'documents',
+    'generated_content',
+    'audit_logs',
+    'exams',
+    'fee_structures',
+    'class_subjects',
+    'classes',
+    'subjects',
+    'departments',
+  ];
+
+  for (const table of order) {
+    await client.query(`DELETE FROM ${table}`);
+  }
 }
 
 async function seed() {
@@ -158,6 +197,17 @@ async function seed() {
   await withTransaction(async (client) => {
     log('  Clearing previous demo content…');
     await clearDemoData(client);
+
+    /*
+     * Re-apply the reference data (permissions, role defaults, settings).
+     * seed.sql runs once as a migration, so a database whose reference rows
+     * were disturbed would otherwise never get them back — and the demo data
+     * below depends on them. Every statement in that file is idempotent, which
+     * is exactly why it is safe to run again here.
+     */
+    const referenceData = fs.readFileSync(path.join(__dirname, 'seed.sql'), 'utf8');
+    await client.query(referenceData);
+    log('  ✔ reference data (permissions, role defaults, settings)');
 
     // ── Departments ────────────────────────────────────────────────────
     const departments = {};
@@ -544,10 +594,13 @@ async function seed() {
 
           for (const student of classStudents) {
             const { ability, trend } = student.archetype;
-            // Apply the trend across the sequence so declines are real and
-            // the "performance dropped" detector has something to find.
+            // Apply the trend across the sequence so declines are real and the
+            // "performance dropped" detector has something to find. Clamped so
+            // even a declining student stays in a believable band rather than
+            // falling off a cliff by the fourth assessment.
             const drift = trend * planIndex;
-            const ratio = scoreAround(ability + drift, 0.1);
+            const target = Math.max(0.22, Math.min(0.98, ability + drift));
+            const ratio = scoreAround(target, 0.1);
             const isAbsent = chance(0.02);
 
             studentIds.push(student.id);

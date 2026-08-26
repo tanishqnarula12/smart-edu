@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ArrowUpDown, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Inbox } from 'lucide-react';
 import { Button } from './Button.jsx';
 import { EmptyState, ErrorState, TableSkeleton } from './States.jsx';
 import { cn } from '../../utils/cn.js';
@@ -74,13 +74,25 @@ export function DataTable({
                         onClick={() => onSort(column.key)}
                         className="inline-flex items-center gap-1 transition hover:text-ink"
                         aria-label={`Sort by ${column.header}`}
+                        // Announce the active direction to screen readers.
+                        aria-sort={
+                          sortBy === column.key
+                            ? sortDir === 'asc'
+                              ? 'ascending'
+                              : 'descending'
+                            : 'none'
+                        }
                       >
                         {column.header}
-                        <ArrowUpDown
-                          size={12}
-                          className={cn(sortBy === column.key ? 'text-brand-600' : 'opacity-40')}
-                          aria-hidden="true"
-                        />
+                        {sortBy === column.key ? (
+                          sortDir === 'asc' ? (
+                            <ArrowUp size={12} className="text-brand-600" aria-hidden="true" />
+                          ) : (
+                            <ArrowDown size={12} className="text-brand-600" aria-hidden="true" />
+                          )
+                        ) : (
+                          <ArrowUpDown size={12} className="opacity-40" aria-hidden="true" />
+                        )}
                       </button>
                     ) : (
                       column.header

@@ -280,14 +280,17 @@ export function Checkbox({ label, description, className, id: providedId, ...pro
 }
 
 /** Accessible switch, used for the privacy toggles (§38). */
-export function Toggle({ checked, onChange, label, description, disabled, id: providedId }) {
+export function Toggle({ checked, onChange, label, description, disabled, ariaLabel, id: providedId }) {
   const generatedId = useId();
   const id = providedId ?? generatedId;
+
+  // `label` may be JSX (a name plus badges), which cannot be an aria-label.
+  const accessibleName = ariaLabel ?? (typeof label === 'string' ? label : undefined);
 
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
-        <label htmlFor={id} className="cursor-pointer text-sm font-medium text-ink">
+        <label id={`${id}-label`} htmlFor={id} className="cursor-pointer text-sm font-medium text-ink">
           {label}
         </label>
         {description && <p className="mt-0.5 text-xs text-ink-muted">{description}</p>}
@@ -298,7 +301,8 @@ export function Toggle({ checked, onChange, label, description, disabled, id: pr
         type="button"
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={accessibleName}
+        aria-labelledby={accessibleName ? undefined : `${id}-label`}
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
         className={cn(

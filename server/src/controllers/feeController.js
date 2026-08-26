@@ -27,18 +27,41 @@ function deriveStatus(total, paid, dueDate) {
   return 'pending';
 }
 
-/** Which student's fees is the caller asking about? */
+/**
+ * Which student's fees is the caller asking about?
+ *
+ * A parent who names no student gets their first linked child, matching how
+ * /parents/dashboard behaves — asking a parent with one child to supply an id
+ * they cannot see would be pointless friction.
+ */
 async function resolveStudentId(req) {
   if (req.user.role === 'student') return req.user.id;
 
   const requested = req.query.studentId || req.params.studentId;
-  if (!requested) throw ApiError.badRequest('A studentId is required');
 
   if (req.user.role === 'parent') {
-    await access.assertParentCanView(req.user.id, requested, 'fees');
+    if (requested) {
+      await access.assertParentCanView(req.user.id, requested, 'fees');
+      return requested;
+    }
+
+    const children = await access.getLinkedChildren(req.user.id);
+    if (!children.length) {
+      throw ApiError.notFound('No children are linked to your account');
+    }
+
+    // Prefer a child who has actually shared their fees.
+    const shared = children.find((child) => child.permissions.fees);
+    if (!shared) {
+      throw ApiError.forbidden(`${children[0].name} has not shared their fee records with you`);
+    }
+    return shared.id;
+  }
+
+  if (req.user.role === 'admin') {
+    if (!requested) throw ApiError.badRequest('A studentId is required');
     return requested;
   }
-  if (req.user.role === 'admin') return requested;
 
   throw ApiError.forbidden('Fee records are visible to students, their parents and administrators');
 }

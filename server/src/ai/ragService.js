@@ -257,16 +257,34 @@ export async function retrieve({ user, query: searchQuery, topK = 5, subjectId =
         .slice(0, topK);
     }
 
-    // Mock mode: PostgreSQL full-text search over the same chunks.
+    /*
+     * Mock mode: PostgreSQL full-text search over the same chunks.
+     *
+     * `plainto_tsquery` ANDs every term, so a natural phrase like "balanced
+     * binary search tree rotations" only matches a chunk containing all five —
+     * which is almost never what a reader wants. Rewriting the *parsed* query's
+     * `&` operators to `|` gives OR semantics with `ts_rank` still ordering the
+     * chunks that match more terms to the top. The rewrite happens on the
+     * tsquery Postgres already parsed, never on raw user input, so nothing is
+     * interpolated into the statement.
+     */
     const rows = await queryMany(
-      `SELECT dc.id, dc.content, d.title, d.id AS document_id, d.source_type,
-              ts_rank(to_tsvector('english', dc.content), plainto_tsquery('english', $4)) AS score
+      `WITH parsed AS (
+         SELECT NULLIF(
+           replace(plainto_tsquery('english', $4)::text, ' & ', ' | '),
+           ''
+         )::tsquery AS query
+       )
+       SELECT dc.id, dc.content, d.title, d.id AS document_id, d.source_type,
+              ts_rank(to_tsvector('english', dc.content), parsed.query) AS score
          FROM document_chunks dc
          JOIN documents d ON d.id = dc.document_id
-        WHERE ($1::uuid[] IS NULL OR d.id = ANY($1::uuid[]))
+         CROSS JOIN parsed
+        WHERE parsed.query IS NOT NULL
+          AND ($1::uuid[] IS NULL OR d.id = ANY($1::uuid[]))
           AND ($2::uuid IS NULL OR d.subject_id = $2::uuid)
           AND ($3::uuid IS NULL OR d.class_id = $3::uuid)
-          AND to_tsvector('english', dc.content) @@ plainto_tsquery('english', $4)
+          AND to_tsvector('english', dc.content) @@ parsed.query
         ORDER BY score DESC
         LIMIT $5`,
       [allowedIds, subjectId, classId, searchQuery, topK]
