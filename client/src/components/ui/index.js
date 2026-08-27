@@ -25,6 +25,7 @@ export {
 } from './States.jsx';
 export { Modal, Drawer, ConfirmDialog } from './Modal.jsx';
 export { DataTable, Pagination } from './DataTable.jsx';
+export { PrintMasthead, PrintFooter } from './PrintReport.jsx';
 export {
   Avatar,
   Tabs,

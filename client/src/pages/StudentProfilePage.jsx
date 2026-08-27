@@ -36,6 +36,8 @@ import {
   Textarea,
   Select,
   Callout,
+  PrintMasthead,
+  PrintFooter,
 } from '../components/ui/index.js';
 import { TrendChart, ComparisonBarChart } from '../charts/Charts.jsx';
 import { formatPercent, formatDate, humanise } from '../utils/format.js';
@@ -112,6 +114,13 @@ export function StudentProfilePage() {
       <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={() => navigate(backPath)} className="mb-4 no-print">
         Back to students
       </Button>
+
+      <PrintMasthead
+        title={`Student report — ${student.name}`}
+        subtitle={[student.className, student.departmentName].filter(Boolean).join(' · ')}
+        meta={`Student ID ${student.studentId} · Roll ${student.rollNumber ?? '—'}`}
+      />
+      <PrintFooter />
 
       {/* Identity */}
       <Card className="mb-6">

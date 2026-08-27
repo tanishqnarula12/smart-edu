@@ -34,13 +34,17 @@ export function DashboardLayout() {
 
   return (
     <div className="flex min-h-screen bg-surface-sunken">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="no-print">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar onMenuClick={() => setSidebarOpen(true)} />
+        <div className="no-print">
+          <Navbar onMenuClick={() => setSidebarOpen(true)} />
+        </div>
 
         {/* Bottom padding on mobile clears the fixed bottom bar. */}
-        <main className="flex-1 px-4 pb-24 pt-5 sm:px-6 sm:pb-8 lg:px-8">
+        <main className="flex-1 px-4 pb-24 pt-5 sm:px-6 sm:pb-8 lg:px-8 print:p-0">
           <div className="mx-auto w-full max-w-[1400px]">
             <Outlet />
           </div>
@@ -49,7 +53,7 @@ export function DashboardLayout() {
 
       {/* Mobile bottom navigation */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface-raised/95 backdrop-blur-md sm:hidden"
+        className="no-print fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface-raised/95 backdrop-blur-md sm:hidden"
         aria-label="Primary"
       >
         <div className="flex items-stretch justify-around">

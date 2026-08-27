@@ -134,19 +134,60 @@
   }
 }
 
-/* Print: reports should come out clean (§32). */
+/*
+ * Print: reports render as a document, not a screenshot of the dashboard
+ * (§32). Forcing the design tokens back to their light values here means
+ * every component's existing color classes print correctly even when the
+ * user was in dark mode — nothing per-component to maintain.
+ */
+@page {
+  margin: 16mm 14mm;
+}
+
 @media print {
-  .no-print {
+  :root,
+  .dark {
+    --surface: 255 255 255;
+    --surface-raised: 255 255 255;
+    --surface-sunken: 255 255 255;
+    --ink: 15 23 42;
+    --ink-muted: 71 85 105;
+    --ink-subtle: 100 116 139;
+    --line: 209 213 219;
+  }
+
+  .no-print,
+  button,
+  nav[aria-label='Pagination'] {
     display: none !important;
   }
+
   body {
     background: white !important;
     color: black !important;
   }
+
   .print-full {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
-    padding: 0 !important;
+    /* Bottom padding clears the fixed PrintFooter repeated on every page. */
+    padding: 0 0 14mm 0 !important;
+  }
+
+  /* Cards read as bordered sections on paper — screen-only chrome goes. */
+  .shadow-card,
+  .shadow-card-hover,
+  .shadow-panel,
+  .shadow-popover {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  table thead {
+    display: table-header-group;
+  }
+  table tr {
+    break-inside: avoid;
   }
 }

@@ -9,6 +9,7 @@ import {
 import { aiApi } from '../../services/endpoints.js';
 import { useApi } from '../../hooks/useApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { PageHeader } from '../../layouts/DashboardLayout.jsx';
 import { AIChat } from '../../components/AIChat.jsx';
 import {
@@ -17,6 +18,8 @@ import {
   Button,
   Select,
   EmptyState,
+  PrintMasthead,
+  PrintFooter,
 } from '../../components/ui/index.js';
 
 /** AI tutor (§15). The chat component handles everything; this is the frame. */
@@ -38,6 +41,7 @@ export function StudentAITutor() {
 /** Study plan generator (§16). */
 export function StudentStudyPlan() {
   const toast = useToast();
+  const { user } = useAuth();
   const [days, setDays] = useState(14);
   const [plan, setPlan] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -134,6 +138,9 @@ export function StudentStudyPlan() {
             </Card>
           )}
         </div>
+
+        {plan && <PrintMasthead title="Study plan" subtitle={`${user?.name} · ${days}-day plan`} />}
+        {plan && <PrintFooter />}
 
         <Card className="print-full lg:col-span-2">
           {!plan ? (

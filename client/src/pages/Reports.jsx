@@ -30,6 +30,8 @@ import {
   ProgressBar,
   Callout,
   Avatar,
+  PrintMasthead,
+  PrintFooter,
 } from '../components/ui/index.js';
 import { ComparisonBarChart, RiskDonut, TrendChart } from '../charts/Charts.jsx';
 import { formatPercent, formatDate } from '../utils/format.js';
@@ -164,7 +166,16 @@ function ClassReport({ classes, classId, onClassChange, onDownload }) {
         <EmptyState icon={School} title="Select a class" message="Choose a class to generate its report." />
       ) : (
         <div className="space-y-5 print-full">
-          <Card>
+          <PrintMasthead
+            title={`Class report — ${data.class.name}`}
+            subtitle={[data.class.academicYear, data.class.department, data.class.classTeacher && `Class teacher: ${data.class.classTeacher}`]
+              .filter(Boolean)
+              .join(' · ')}
+            meta={`Generated ${formatDate(data.generatedAt)} by ${data.generatedBy}`}
+          />
+          <PrintFooter />
+
+          <Card className="no-print">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-ink">{data.class.name}</h2>
@@ -286,7 +297,15 @@ function TeacherReport({ onDownload }) {
 
   return (
     <div className="space-y-5 print-full">
-      <Card>
+      <PrintMasthead
+        title={`Teacher workload report — ${data.teacher.name}`}
+        subtitle={[data.teacher.designation, data.teacher.department, data.teacher.employeeId]
+          .filter(Boolean)
+          .join(' · ')}
+      />
+      <PrintFooter />
+
+      <Card className="no-print">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-ink">{data.teacher.name}</h2>
@@ -380,7 +399,13 @@ function InstitutionReport({ onDownload }) {
 
   return (
     <div className="space-y-5 print-full">
-      <Card>
+      <PrintMasthead
+        title="Institution report"
+        meta={`Generated ${formatDate(data.generatedAt)} by ${data.generatedBy}`}
+      />
+      <PrintFooter />
+
+      <Card className="no-print">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-ink">Institution report</h2>

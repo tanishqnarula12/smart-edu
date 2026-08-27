@@ -48,10 +48,21 @@ const CORNERS = [
 const prefersReducedMotion =
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-function AnimatedWord({ children, delayMs }) {
+// `gradient` paints the clip on this same element rather than a shared
+// ancestor — an ancestor's `background-clip: text` stops compositing with a
+// transparent-colored descendant once that descendant gets its own layer
+// (which `word-in`'s transform/filter/opacity animation forces), so a
+// gradient painted one level up renders invisible until something like
+// :hover removes the descendant from its own layer.
+function AnimatedWord({ children, delayMs, gradient = false }) {
   return (
     <span
-      className="mx-[0.12em] inline-block opacity-0 [animation-fill-mode:forwards] animate-word-in transition-[color,transform] duration-300 hover:-translate-y-0.5 hover:text-brand-200"
+      className={cn(
+        'mx-[0.12em] inline-block opacity-0 [animation-fill-mode:forwards] animate-word-in transition-transform duration-300 hover:-translate-y-0.5',
+        gradient
+          ? 'bg-gradient-to-r from-brand-300 to-violet-300 bg-clip-text text-transparent'
+          : 'transition-[color,transform] hover:text-brand-200'
+      )}
       style={{ animationDelay: `${delayMs}ms` }}
     >
       {children}
@@ -183,9 +194,9 @@ export function HeroScene() {
               </AnimatedWord>
             ))}
           </div>
-          <div className="mt-2 bg-gradient-to-r from-brand-300 to-violet-300 bg-clip-text text-3xl font-light text-transparent sm:text-4xl lg:text-5xl">
+          <div className="mt-2 text-3xl font-light sm:text-4xl lg:text-5xl">
             {TIER_TWO.map((word, index) => (
-              <AnimatedWord key={word} delayMs={650 + index * 110}>
+              <AnimatedWord key={word} delayMs={650 + index * 110} gradient>
                 {word}
               </AnimatedWord>
             ))}

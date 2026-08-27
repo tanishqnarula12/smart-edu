@@ -6,6 +6,7 @@ import {
 import { useState } from 'react';
 import { Button } from '../components/ui/Button.jsx';
 import { HeroScene } from '../components/landing/HeroScene.jsx';
+import { Reveal } from '../components/landing/Reveal.jsx';
 import { cn } from '../utils/cn.js';
 
 /** Landing page (§71). */
@@ -96,7 +97,7 @@ export function Landing() {
       <section className="border-y border-line bg-surface-sunken py-20">
         <div className="mx-auto max-w-6xl px-5">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-            <div>
+            <Reveal>
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
                 The problem
               </p>
@@ -122,9 +123,12 @@ export function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
 
-            <div className="rounded-2xl border border-line bg-surface-raised p-8 shadow-panel">
+            <Reveal
+              delayMs={150}
+              className="rounded-2xl border border-line bg-surface-raised p-8 shadow-panel"
+            >
               <p className="text-sm font-semibold uppercase tracking-wide text-success-600">
                 The solution
               </p>
@@ -150,15 +154,19 @@ export function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       {/* ── Features ───────────────────────────────────────────────────── */}
-      <section id="features" className="py-20">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="mx-auto max-w-2xl text-center">
+      <section id="features" className="relative overflow-hidden py-20">
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-brand-500/[0.06] blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative mx-auto max-w-6xl px-5">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-ink">
               Everything an institution actually runs on
             </h2>
@@ -166,7 +174,7 @@ export function Landing() {
               Not a prototype — a working system with real persistence, real authorisation and real
               analytics behind every screen.
             </p>
-          </div>
+          </Reveal>
 
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -200,17 +208,16 @@ export function Landing() {
                 title: 'Audit trail',
                 body: 'Sign-ins, permission changes, marks and attendance edits — all recorded and searchable.',
               },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className="rounded-2xl border border-line bg-surface-raised p-6 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-card-hover"
-              >
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400">
-                  <feature.icon size={21} aria-hidden="true" />
-                </span>
-                <h3 className="mt-4 text-base font-semibold text-ink">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.body}</p>
-              </div>
+            ].map((feature, index) => (
+              <Reveal key={feature.title} delayMs={(index % 3) * 90}>
+                <div className="h-full rounded-2xl border border-line bg-surface-raised p-6 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400">
+                    <feature.icon size={21} aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-4 text-base font-semibold text-ink">{feature.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.body}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -219,13 +226,13 @@ export function Landing() {
       {/* ── Roles ──────────────────────────────────────────────────────── */}
       <section id="roles" className="border-y border-line bg-surface-sunken py-20">
         <div className="mx-auto max-w-6xl px-5">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-ink">Built for four people at once</h2>
             <p className="mt-4 text-[15px] leading-relaxed text-ink-muted">
               The same academic record, presented differently — and scoped strictly to what each
               person is allowed to see.
             </p>
-          </div>
+          </Reveal>
 
           <div className="mt-14 grid gap-6 sm:grid-cols-2">
             {[
@@ -273,29 +280,31 @@ export function Landing() {
                   'Complaint triage, fee tracking and reporting',
                 ],
               },
-            ].map((entry) => (
-              <div key={entry.role} className="rounded-2xl border border-line bg-surface-raised p-7 shadow-card">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white',
-                      entry.colour
-                    )}
-                  >
-                    <entry.icon size={21} aria-hidden="true" />
-                  </span>
-                  <h3 className="text-lg font-semibold text-ink">{entry.role}</h3>
-                </div>
+            ].map((entry, index) => (
+              <Reveal key={entry.role} delayMs={(index % 2) * 100}>
+                <div className="rounded-2xl border border-line bg-surface-raised p-7 shadow-card">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white',
+                        entry.colour
+                      )}
+                    >
+                      <entry.icon size={21} aria-hidden="true" />
+                    </span>
+                    <h3 className="text-lg font-semibold text-ink">{entry.role}</h3>
+                  </div>
 
-                <ul className="mt-5 space-y-2.5">
-                  {entry.points.map((point) => (
-                    <li key={point} className="flex gap-2.5 text-sm text-ink-muted">
-                      <Check size={15} className="mt-0.5 shrink-0 text-success-600" aria-hidden="true" />
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                  <ul className="mt-5 space-y-2.5">
+                    {entry.points.map((point) => (
+                      <li key={point} className="flex gap-2.5 text-sm text-ink-muted">
+                        <Check size={15} className="mt-0.5 shrink-0 text-success-600" aria-hidden="true" />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -305,7 +314,7 @@ export function Landing() {
       <section id="ai" className="py-20">
         <div className="mx-auto max-w-6xl px-5">
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-            <div>
+            <Reveal>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 dark:border-brand-900 dark:bg-brand-950/50 dark:text-brand-300">
                 <Brain size={12} aria-hidden="true" />
                 AI intelligence
@@ -348,10 +357,10 @@ export function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
 
             {/* Illustrative chat, not a live one */}
-            <div className="rounded-2xl border border-line bg-surface-raised p-6 shadow-panel">
+            <Reveal delayMs={150} className="rounded-2xl border border-line bg-surface-raised p-6 shadow-panel">
               <div className="flex items-center gap-2.5 border-b border-line pb-4">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 text-white">
                   <Sparkles size={15} aria-hidden="true" />
@@ -378,14 +387,14 @@ export function Landing() {
                   </p>
                 </div>
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       {/* ── Privacy ────────────────────────────────────────────────────── */}
       <section id="privacy" className="border-y border-line bg-gradient-to-br from-brand-600 to-violet-700 py-20 text-white">
-        <div className="mx-auto max-w-4xl px-5 text-center">
+        <Reveal className="mx-auto max-w-4xl px-5 text-center">
           <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
             <ShieldCheck size={26} aria-hidden="true" />
           </span>
@@ -411,12 +420,12 @@ export function Landing() {
               </div>
             ))}
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Future vision ──────────────────────────────────────────────── */}
       <section className="py-20">
-        <div className="mx-auto max-w-4xl px-5 text-center">
+        <Reveal className="mx-auto max-w-4xl px-5 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-ink">Built to grow</h2>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-muted">
             The AI layer is provider-neutral and the retrieval layer is vector-store-agnostic. Swap
@@ -436,12 +445,16 @@ export function Landing() {
               )
             )}
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── CTA ────────────────────────────────────────────────────────── */}
-      <section className="border-t border-line bg-surface-sunken py-20">
-        <div className="mx-auto max-w-3xl px-5 text-center">
+      <section className="relative overflow-hidden border-t border-line bg-surface-sunken py-20">
+        <div
+          className="pointer-events-none absolute left-1/2 top-0 h-80 w-[40rem] -translate-x-1/2 rounded-full bg-violet-500/[0.06] blur-3xl"
+          aria-hidden="true"
+        />
+        <Reveal className="relative mx-auto max-w-3xl px-5 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-ink">
             See it with real data in it
           </h2>
@@ -458,7 +471,7 @@ export function Landing() {
               Create your own
             </Button>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────────── */}
