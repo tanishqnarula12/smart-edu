@@ -93,6 +93,15 @@ export default {
           '60%': { opacity: '0.85', transform: 'translateY(4px) scale(0.99)', filter: 'blur(1px)' },
           '100%': { opacity: '1', transform: 'translateY(0) scale(1)', filter: 'blur(0)' },
         },
+        // Same reveal, no `filter` — `filter` + `background-clip: text` is a
+        // flaky combination in real browsers (can leave a descender like the
+        // "g" in "insights" looking clipped after the animation settles), so
+        // gradient words use this instead of `word-in`.
+        'word-in-solid': {
+          '0%': { opacity: '0', transform: 'translateY(22px) scale(0.94)' },
+          '60%': { opacity: '0.85', transform: 'translateY(4px) scale(0.99)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
         'grid-line-draw': {
           '0%': { strokeDashoffset: '1000', opacity: '0' },
           '50%': { opacity: '0.35' },
@@ -121,6 +130,7 @@ export default {
         'scale-in': 'scale-in 140ms cubic-bezier(0.16, 1, 0.3, 1)',
         'content-reveal': 'content-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'word-in': 'word-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'word-in-solid': 'word-in-solid 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'grid-line-draw': 'grid-line-draw 0.9s ease-out forwards',
         'dot-pulse': 'dot-pulse 3s ease-in-out infinite',
         'particle-float': 'particle-float 5s ease-in-out infinite',

@@ -7,6 +7,7 @@ import { config } from '../config/env.js';
 import { recordAudit, AUDIT_ACTIONS } from '../utils/audit.js';
 import * as access from '../services/accessService.js';
 import { notify, NOTIFICATION_TYPES } from '../services/notificationService.js';
+import * as razorpay from '../services/razorpayService.js';
 
 /**
  * Fees and payments (§31).
@@ -266,7 +267,24 @@ export const createPayment = asyncHandler(async (req, res) => {
     throw ApiError.badRequest(`The outstanding amount is ${outstanding.toFixed(2)}`);
   }
 
-  const orderId = `order_${crypto.randomBytes(10).toString('hex')}`;
+  let orderId;
+  if (config.payments.enabled) {
+    // A real order Razorpay's Checkout widget can actually open — a locally
+    // invented id would never be recognised on their end.
+    const receipt = `feerec_${feeRecordId}_${Date.now().toString(36)}`;
+    try {
+      const order = await razorpay.createOrder({
+        amount,
+        receipt,
+        notes: { feeRecordId, studentId: record.student_id },
+      });
+      orderId = order.id;
+    } catch (razorpayError) {
+      throw ApiError.internal(`Could not start the payment: ${razorpayError.message}`);
+    }
+  } else {
+    orderId = `order_${crypto.randomBytes(10).toString('hex')}`;
+  }
 
   const payment = await queryOne(
     `INSERT INTO payments (fee_record_id, student_id, amount, method, provider, provider_order_id, status)
@@ -283,6 +301,9 @@ export const createPayment = asyncHandler(async (req, res) => {
       // The client needs the key id to open the Razorpay checkout; the secret
       // never leaves the server.
       razorpayKeyId: config.payments.enabled ? config.payments.razorpayKeyId : null,
+      // Razorpay wants the amount in paise, echoed back so the client
+      // doesn't have to duplicate the rupee→paise conversion itself.
+      razorpayAmount: config.payments.enabled ? Math.round(amount * 100) : null,
       mockMode: !config.payments.enabled,
       message: config.payments.enabled
         ? 'Order created — complete the payment in the checkout window'

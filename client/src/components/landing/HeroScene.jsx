@@ -51,17 +51,20 @@ const prefersReducedMotion =
 // `gradient` paints the clip on this same element rather than a shared
 // ancestor — an ancestor's `background-clip: text` stops compositing with a
 // transparent-colored descendant once that descendant gets its own layer
-// (which `word-in`'s transform/filter/opacity animation forces), so a
-// gradient painted one level up renders invisible until something like
-// :hover removes the descendant from its own layer.
+// (which the entrance animation's transform/opacity forces), so a gradient
+// painted one level up renders invisible until something like :hover removes
+// the descendant from its own layer. Gradient words also skip the `blur()`
+// step of the animation — `filter` plus `background-clip: text` is a flaky
+// pairing in real browsers and can leave a descender (the "g" in "insights")
+// looking clipped once the animation settles.
 function AnimatedWord({ children, delayMs, gradient = false }) {
   return (
     <span
       className={cn(
-        'mx-[0.1em] inline-block opacity-0 [animation-fill-mode:forwards] animate-word-in transition-transform duration-300 hover:-translate-y-0.5',
+        'mx-[0.1em] inline-block opacity-0 [animation-fill-mode:forwards] transition-transform duration-300 hover:-translate-y-0.5',
         gradient
-          ? 'bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent dark:from-brand-300 dark:to-violet-300'
-          : 'transition-[color,transform] hover:text-brand-600 dark:hover:text-brand-200'
+          ? 'animate-word-in-solid bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent dark:from-brand-300 dark:to-violet-300'
+          : 'animate-word-in transition-[color,transform] hover:text-brand-600 dark:hover:text-brand-200'
       )}
       style={{ animationDelay: `${delayMs}ms` }}
     >
@@ -191,7 +194,7 @@ export function HeroScene() {
           AI-powered academic management
         </span>
 
-        <h1 className="mx-auto mt-6 max-w-3xl text-balance text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-5xl lg:text-6xl">
+        <h1 className="mx-auto mt-6 max-w-3xl text-balance text-3xl font-extrabold leading-[1.25] tracking-tight sm:text-5xl lg:text-6xl">
           <div>
             {TIER_ONE.map((word, index) => (
               <AnimatedWord key={word} delayMs={350 + index * 130}>

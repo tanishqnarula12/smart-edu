@@ -9,6 +9,8 @@ import {
 import { feeApi, parentApi } from '../../services/endpoints.js';
 import { useApi } from '../../hooks/useApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { loadRazorpayCheckout } from '../../utils/razorpay.js';
 import { PageHeader } from '../../layouts/DashboardLayout.jsx';
 import {
   Card,
@@ -38,6 +40,7 @@ import { formatCurrency, formatDate, formatDateTime } from '../../utils/format.j
  */
 export function Fees({ forParent = false }) {
   const toast = useToast();
+  const { user } = useAuth();
 
   const [selectedChildId, setSelectedChildId] = useState(null);
   const [payingRecord, setPayingRecord] = useState(null);
@@ -71,6 +74,13 @@ export function Fees({ forParent = false }) {
     setAmount(String(record.pendingAmount));
   };
 
+  const settle = async (verifyPayload) => {
+    const verified = await feeApi.verify(verifyPayload);
+    toast.success(`Payment successful. Receipt ${verified.receiptNo}.`);
+    setPayingRecord(null);
+    refetch();
+  };
+
   const pay = async () => {
     setPaying(true);
     try {
@@ -81,14 +91,57 @@ export function Fees({ forParent = false }) {
         method,
       });
 
-      const verified = await feeApi.verify({ paymentId: created.payment.id });
+      if (created.mockMode) {
+        await settle({ paymentId: created.payment.id });
+        setPaying(false);
+        return;
+      }
 
-      toast.success(`Payment successful. Receipt ${verified.receiptNo}.`);
-      setPayingRecord(null);
-      refetch();
+      // Real Razorpay order — open their Checkout widget and only settle once
+      // it hands back a payment id and signature to verify. `isPaying` stays
+      // true while the widget is open; its own callbacks below reset it.
+      const Razorpay = await loadRazorpayCheckout();
+
+      const checkout = new Razorpay({
+        key: created.razorpayKeyId,
+        amount: created.razorpayAmount,
+        currency: 'INR',
+        name: 'Smart Edu',
+        description: payingRecord.name,
+        order_id: created.orderId,
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone,
+        },
+        theme: { color: '#4f46e5' },
+        handler: async (response) => {
+          try {
+            await settle({
+              paymentId: created.payment.id,
+              providerPaymentId: response.razorpay_payment_id,
+              providerSignature: response.razorpay_signature,
+            });
+          } catch (verifyError) {
+            toast.error(verifyError.message);
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: {
+          // The user closed the checkout without paying — not an error.
+          ondismiss: () => setPaying(false),
+        },
+      });
+
+      checkout.on('payment.failed', (response) => {
+        toast.error(response.error?.description || 'Payment failed');
+        setPaying(false);
+      });
+
+      checkout.open();
     } catch (payError) {
       toast.error(payError.message);
-    } finally {
       setPaying(false);
     }
   };
