@@ -169,4 +169,19 @@ export const dashboardPathFor = (role) =>
     admin: '/admin/dashboard',
   })[role] ?? '/';
 
+/**
+ * Where to send someone right after they authenticate. `fromPathname` is
+ * "where a protected route redirected them from" — worth honouring so a
+ * deep link survives a login prompt, but only when it actually belongs to
+ * this role. Without that check, logging out of one role and straight into
+ * another reuses the previous role's redirect and lands the new session on
+ * a route it isn't allowed to see (a 403, not a real bug in the route
+ * itself — just a stale `location.state` carried across two logins).
+ */
+export const resolvePostLoginPath = (fromPathname, role) => {
+  const home = dashboardPathFor(role);
+  const roleSegment = home.split('/')[1];
+  return fromPathname?.startsWith(`/${roleSegment}`) ? fromPathname : home;
+};
+
 export default AuthContext;

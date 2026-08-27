@@ -25,8 +25,8 @@ export function Landing() {
       {/* ── Navigation ─────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-50 border-b border-line bg-surface/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-sm">
+          <Link to="/" className="group flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 text-white shadow-sm transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3">
               <GraduationCap size={19} aria-hidden="true" />
             </span>
             <span className="text-[15px] font-bold tracking-tight text-ink">Smart Edu</span>
@@ -127,7 +127,7 @@ export function Landing() {
 
             <Reveal
               delayMs={150}
-              className="rounded-2xl border border-line bg-surface-raised p-8 shadow-panel"
+              className="rounded-2xl border border-line bg-surface-raised p-8 shadow-panel transition-transform duration-300 hover:-translate-y-1"
             >
               <p className="text-sm font-semibold uppercase tracking-wide text-success-600">
                 The solution
@@ -210,11 +210,13 @@ export function Landing() {
               },
             ].map((feature, index) => (
               <Reveal key={feature.title} delayMs={(index % 3) * 90}>
-                <div className="h-full rounded-2xl border border-line bg-surface-raised p-6 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400">
+                <div className="group h-full rounded-2xl border border-line bg-surface-raised p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-brand-300 hover:shadow-card-hover dark:hover:border-brand-800">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 dark:bg-brand-950/50 dark:text-brand-400">
                     <feature.icon size={21} aria-hidden="true" />
                   </span>
-                  <h3 className="mt-4 text-base font-semibold text-ink">{feature.title}</h3>
+                  <h3 className="mt-4 text-base font-semibold text-ink transition-colors group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                    {feature.title}
+                  </h3>
                   <p className="mt-2 text-sm leading-relaxed text-ink-muted">{feature.body}</p>
                 </div>
               </Reveal>
@@ -224,8 +226,16 @@ export function Landing() {
       </section>
 
       {/* ── Roles ──────────────────────────────────────────────────────── */}
-      <section id="roles" className="border-y border-line bg-surface-sunken py-20">
-        <div className="mx-auto max-w-6xl px-5">
+      <section id="roles" className="relative overflow-hidden border-y border-line bg-surface-sunken py-20">
+        <div
+          className="pointer-events-none absolute -left-24 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-teal-500/[0.05] blur-3xl"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -right-24 top-1/4 h-72 w-72 rounded-full bg-amber-500/[0.05] blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative mx-auto max-w-6xl px-5">
           <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-ink">Built for four people at once</h2>
             <p className="mt-4 text-[15px] leading-relaxed text-ink-muted">
@@ -282,11 +292,18 @@ export function Landing() {
               },
             ].map((entry, index) => (
               <Reveal key={entry.role} delayMs={(index % 2) * 100}>
-                <div className="rounded-2xl border border-line bg-surface-raised p-7 shadow-card">
-                  <div className="flex items-center gap-3">
+                <div className="group relative overflow-hidden rounded-2xl border border-line bg-surface-raised p-7 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover">
+                  <div
+                    className={cn(
+                      'pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-20',
+                      entry.colour
+                    )}
+                    aria-hidden="true"
+                  />
+                  <div className="relative flex items-center gap-3">
                     <span
                       className={cn(
-                        'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white',
+                        'flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br text-white transition-transform duration-300 group-hover:scale-110',
                         entry.colour
                       )}
                     >
@@ -295,7 +312,7 @@ export function Landing() {
                     <h3 className="text-lg font-semibold text-ink">{entry.role}</h3>
                   </div>
 
-                  <ul className="mt-5 space-y-2.5">
+                  <ul className="relative mt-5 space-y-2.5">
                     {entry.points.map((point) => (
                       <li key={point} className="flex gap-2.5 text-sm text-ink-muted">
                         <Check size={15} className="mt-0.5 shrink-0 text-success-600" aria-hidden="true" />
@@ -346,8 +363,8 @@ export function Landing() {
                     body: 'The built-in assistant composes grounded answers straight from your records.',
                   },
                 ].map((item) => (
-                  <li key={item.title} className="flex gap-3">
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-success-50 text-success-600 dark:bg-success-500/10">
+                  <li key={item.title} className="group flex gap-3">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-success-50 text-success-600 transition-transform duration-300 group-hover:scale-110 dark:bg-success-500/10">
                       <Lock size={14} aria-hidden="true" />
                     </span>
                     <div>
@@ -360,7 +377,10 @@ export function Landing() {
             </Reveal>
 
             {/* Illustrative chat, not a live one */}
-            <Reveal delayMs={150} className="rounded-2xl border border-line bg-surface-raised p-6 shadow-panel">
+            <Reveal
+              delayMs={150}
+              className="rounded-2xl border border-line bg-surface-raised p-6 shadow-panel transition-transform duration-300 hover:-translate-y-1"
+            >
               <div className="flex items-center gap-2.5 border-b border-line pb-4">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-violet-600 text-white">
                   <Sparkles size={15} aria-hidden="true" />
@@ -414,7 +434,10 @@ export function Landing() {
               { title: 'Per parent', body: 'Different visibility for each linked guardian' },
               { title: 'Enforced in the database', body: 'Not a UI filter — unauthorised data is never read' },
             ].map((item) => (
-              <div key={item.title} className="rounded-xl bg-white/10 p-5 backdrop-blur">
+              <div
+                key={item.title}
+                className="rounded-xl bg-white/10 p-5 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:bg-white/15"
+              >
                 <p className="text-sm font-semibold">{item.title}</p>
                 <p className="mt-1.5 text-sm text-white/75">{item.body}</p>
               </div>
@@ -438,7 +461,7 @@ export function Landing() {
               (integration) => (
                 <span
                   key={integration}
-                  className="rounded-full border border-line bg-surface-raised px-3.5 py-1.5 text-sm font-medium text-ink-muted"
+                  className="cursor-default rounded-full border border-line bg-surface-raised px-3.5 py-1.5 text-sm font-medium text-ink-muted transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:text-brand-600 hover:shadow-card dark:hover:border-brand-800 dark:hover:text-brand-400"
                 >
                   {integration}
                 </span>

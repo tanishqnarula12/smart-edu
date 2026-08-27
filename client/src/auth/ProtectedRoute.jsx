@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth, dashboardPathFor } from '../context/AuthContext.jsx';
+import { useAuth, dashboardPathFor, resolvePostLoginPath } from '../context/AuthContext.jsx';
 import { PageLoader } from '../components/ui/States.jsx';
 
 /**
@@ -37,7 +37,7 @@ export function PublicOnlyRoute() {
   if (isLoading) return <PageLoader />;
 
   if (isAuthenticated) {
-    const destination = location.state?.from?.pathname ?? dashboardPathFor(role);
+    const destination = resolvePostLoginPath(location.state?.from?.pathname, role);
     return <Navigate to={destination} replace />;
   }
 

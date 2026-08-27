@@ -4,10 +4,10 @@ import { Button } from '../ui/Button.jsx';
 import { cn } from '../../utils/cn.js';
 
 /**
- * The landing page's hero. Deliberately its own dark band regardless of the
- * site's light/dark toggle — an isolated "showcase" surface, not themed UI —
- * with a mouse-follow glow, click ripples and an animated data-grid backdrop
- * that fits an analytics product better than a static gradient blob.
+ * The landing page's hero. Follows the site's light/dark toggle like every
+ * other section — via the shared `ink`/`surface` tokens plus `currentColor`
+ * for the SVG backdrop — rather than being a permanently-dark island that
+ * clashes with a light-mode page around it.
  *
  * Mouse/click tracking is scoped to this section via React's own event
  * props (not a document-level listener), and positions are container-
@@ -58,10 +58,10 @@ function AnimatedWord({ children, delayMs, gradient = false }) {
   return (
     <span
       className={cn(
-        'mx-[0.12em] inline-block opacity-0 [animation-fill-mode:forwards] animate-word-in transition-transform duration-300 hover:-translate-y-0.5',
+        'mx-[0.1em] inline-block opacity-0 [animation-fill-mode:forwards] animate-word-in transition-transform duration-300 hover:-translate-y-0.5',
         gradient
-          ? 'bg-gradient-to-r from-brand-300 to-violet-300 bg-clip-text text-transparent'
-          : 'transition-[color,transform] hover:text-brand-200'
+          ? 'bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent dark:from-brand-300 dark:to-violet-300'
+          : 'transition-[color,transform] hover:text-brand-600 dark:hover:text-brand-200'
       )}
       style={{ animationDelay: `${delayMs}ms` }}
     >
@@ -95,47 +95,52 @@ export function HeroScene() {
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setGlow((current) => ({ ...current, opacity: 0 }))}
       onClick={handleClick}
-      className="relative isolate overflow-hidden bg-gradient-to-b from-[#0a0e1f] via-[#0c1129] to-[#0f1420] text-white"
+      className="relative isolate overflow-hidden bg-gradient-to-b from-brand-50 via-white to-violet-50 text-ink dark:from-[#0a0e1f] dark:via-[#0c1129] dark:to-[#0f1420]"
     >
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full text-ink-subtle/60"
+        aria-hidden="true"
+      >
         <defs>
           <pattern id="hero-grid" width="56" height="56" patternUnits="userSpaceOnUse">
-            <path d="M 56 0 L 0 0 0 56" fill="none" stroke="rgba(129,140,248,0.08)" strokeWidth="0.5" />
+            <path d="M 56 0 L 0 0 0 56" fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="0.5" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#hero-grid)" />
-        {GRID_LINES.map((line) => (
-          <line
-            key={`${line.x1}-${line.y1}`}
-            x1={line.x1}
-            y1={line.y1}
-            x2={line.x2}
-            y2={line.y2}
-            stroke="#818cf8"
-            strokeWidth="0.5"
-            strokeDasharray="5 5"
-            className="animate-grid-line-draw"
-            style={{ animationDelay: `${line.delay}ms` }}
-          />
-        ))}
-        {DETAIL_DOTS.map((dot) => (
-          <circle
-            key={`${dot.cx}-${dot.cy}`}
-            cx={dot.cx}
-            cy={dot.cy}
-            r="2"
-            fill="#a5b4fc"
-            className="animate-dot-pulse"
-            style={{ animationDelay: `${dot.delay}ms` }}
-          />
-        ))}
+        <g className="text-brand-500 dark:text-brand-400">
+          {GRID_LINES.map((line) => (
+            <line
+              key={`${line.x1}-${line.y1}`}
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x2}
+              y2={line.y2}
+              stroke="currentColor"
+              strokeWidth="0.5"
+              strokeDasharray="5 5"
+              className="animate-grid-line-draw"
+              style={{ animationDelay: `${line.delay}ms` }}
+            />
+          ))}
+          {DETAIL_DOTS.map((dot) => (
+            <circle
+              key={`${dot.cx}-${dot.cy}`}
+              cx={dot.cx}
+              cy={dot.cy}
+              r="2"
+              fill="currentColor"
+              className="animate-dot-pulse"
+              style={{ animationDelay: `${dot.delay}ms` }}
+            />
+          ))}
+        </g>
       </svg>
 
       {CORNERS.map((corner) => (
         <div
           key={corner.className}
           className={cn(
-            'pointer-events-none absolute h-9 w-9 border border-white/15 opacity-0 [animation-fill-mode:forwards] animate-content-reveal',
+            'pointer-events-none absolute h-9 w-9 border border-ink/15 opacity-0 [animation-fill-mode:forwards] animate-content-reveal',
             corner.className
           )}
           style={{ animationDelay: `${corner.delay}ms` }}
@@ -147,7 +152,7 @@ export function HeroScene() {
         PARTICLES.map((particle) => (
           <div
             key={`${particle.top}-${particle.left}`}
-            className="pointer-events-none absolute h-1 w-1 rounded-full bg-brand-300 animate-particle-float"
+            className="pointer-events-none absolute h-1 w-1 rounded-full bg-brand-500 animate-particle-float dark:bg-brand-300"
             style={{ top: particle.top, left: particle.left, animationDelay: `${particle.delay}ms` }}
             aria-hidden="true"
           />
@@ -171,7 +176,7 @@ export function HeroScene() {
       {ripples.map((ripple) => (
         <div
           key={ripple.id}
-          className="pointer-events-none absolute h-2 w-2 rounded-full bg-brand-300/70 animate-ripple-out"
+          className="pointer-events-none absolute h-2 w-2 rounded-full bg-brand-500/70 animate-ripple-out dark:bg-brand-300/70"
           style={{ left: ripple.x, top: ripple.y }}
           aria-hidden="true"
         />
@@ -179,14 +184,14 @@ export function HeroScene() {
 
       <div className="relative mx-auto max-w-6xl px-5 pb-20 pt-20 text-center sm:pt-28">
         <span
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-white/80 opacity-0 [animation-fill-mode:forwards] animate-content-reveal backdrop-blur"
+          className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-raised/70 px-3 py-1 text-xs font-medium text-ink-muted opacity-0 [animation-fill-mode:forwards] animate-content-reveal backdrop-blur"
           style={{ animationDelay: '100ms' }}
         >
           <Sparkles size={12} aria-hidden="true" />
           AI-powered academic management
         </span>
 
-        <h1 className="mx-auto mt-6 max-w-3xl text-balance text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+        <h1 className="mx-auto mt-6 max-w-3xl text-balance text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-5xl lg:text-6xl">
           <div>
             {TIER_ONE.map((word, index) => (
               <AnimatedWord key={word} delayMs={350 + index * 130}>
@@ -194,7 +199,7 @@ export function HeroScene() {
               </AnimatedWord>
             ))}
           </div>
-          <div className="mt-2 text-3xl font-light sm:text-4xl lg:text-5xl">
+          <div className="mt-2 text-2xl font-light sm:text-4xl lg:text-5xl">
             {TIER_TWO.map((word, index) => (
               <AnimatedWord key={word} delayMs={650 + index * 110} gradient>
                 {word}
@@ -207,7 +212,7 @@ export function HeroScene() {
           className="opacity-0 [animation-fill-mode:forwards] animate-content-reveal"
           style={{ animationDelay: '1150ms' }}
         >
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-white/70">
+          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-ink-muted">
             Smart Edu unifies attendance, marks, assignments and analytics into one place —
             with an AI assistant for every role that respects exactly who is allowed to see what.
           </p>
@@ -216,7 +221,7 @@ export function HeroScene() {
             <Button to="/register" size="lg" iconRight={ArrowRight}>
               Create an account
             </Button>
-            <Button to="/login" variant="inverse" size="lg">
+            <Button to="/login" variant="secondary" size="lg">
               Sign in to your dashboard
             </Button>
           </div>
@@ -229,8 +234,8 @@ export function HeroScene() {
               { value: '0', label: 'Plaintext passwords' },
             ].map((stat) => (
               <div key={stat.label}>
-                <dt className="text-2xl font-bold sm:text-3xl">{stat.value}</dt>
-                <dd className="mt-1 text-xs text-white/60">{stat.label}</dd>
+                <dt className="text-2xl font-bold text-ink sm:text-3xl">{stat.value}</dt>
+                <dd className="mt-1 text-xs text-ink-muted">{stat.label}</dd>
               </div>
             ))}
           </dl>

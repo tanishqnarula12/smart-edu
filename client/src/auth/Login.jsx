@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { LogIn, AlertCircle } from 'lucide-react';
 import { AuthLayout } from './AuthLayout.jsx';
-import { useAuth, dashboardPathFor } from '../context/AuthContext.jsx';
+import { useAuth, resolvePostLoginPath } from '../context/AuthContext.jsx';
 import { Button, Input, PasswordInput, Checkbox } from '../components/ui/index.js';
 
 /** Sign-in (§4). Redirects by role, or back to wherever the user was headed. */
@@ -24,7 +24,7 @@ export function Login() {
     setServerError(null);
     try {
       const user = await login(values);
-      const destination = location.state?.from?.pathname ?? dashboardPathFor(user.role);
+      const destination = resolvePostLoginPath(location.state?.from?.pathname, user.role);
       navigate(destination, { replace: true });
     } catch (error) {
       setServerError(error.message);
