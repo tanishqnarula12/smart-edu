@@ -24,6 +24,7 @@ export const listAssignments = asyncHandler(async (req, res) => {
     const { assignments, total } = await assignmentService.getStudentAssignments(req.user.id, {
       status: req.query.status,
       subjectId: req.query.subjectId,
+      sourceKind: req.query.sourceKind,
       limit,
       offset,
     });
@@ -46,6 +47,7 @@ export const listAssignments = asyncHandler(async (req, res) => {
         submittedAt: row.submitted_at,
         marks: row.marks,
         feedback: row.feedback,
+        sourceKind: row.source_kind,
       })),
       buildPaginationMeta({ page, limit }, total),
       'Assignments'
@@ -59,6 +61,7 @@ export const listAssignments = asyncHandler(async (req, res) => {
 
     const { assignments, total } = await assignmentService.getStudentAssignments(studentId, {
       status: req.query.status,
+      sourceKind: req.query.sourceKind,
       limit,
       offset,
     });
@@ -87,6 +90,7 @@ export const listAssignments = asyncHandler(async (req, res) => {
     teacherId: req.user.role === 'teacher' ? req.user.id : undefined,
     classId: req.query.classId,
     subjectId: req.query.subjectId,
+    sourceKind: req.query.sourceKind,
     limit,
     offset,
   });
@@ -108,6 +112,7 @@ export const listAssignments = asyncHandler(async (req, res) => {
       submissionCount: row.submission_count,
       gradedCount: row.graded_count,
       createdAt: row.created_at,
+      sourceKind: row.source_kind,
     })),
     buildPaginationMeta({ page, limit }, total),
     'Assignments'
@@ -136,6 +141,7 @@ export const getAssignment = asyncHandler(async (req, res) => {
         maxMarks: assignment.max_marks,
         attachmentUrl: assignment.attachment_url,
         questions: assignment.questions,
+        sourceKind: assignment.source_kind,
         subjectName: assignment.subject_name,
         teacherName: assignment.teacher_name,
         status: own.derived_status,
@@ -362,7 +368,10 @@ export const gradeSubmission = asyncHandler(async (req, res) => {
 /** GET /api/assignments/stats — completion overview. */
 export const getStats = asyncHandler(async (req, res) => {
   const classIds = req.user.role === 'teacher' ? await access.getTeacherClassIds(req.user.id) : null;
-  const stats = await assignmentService.getCompletionStats({ classIds });
+  const stats = await assignmentService.getCompletionStats({
+    classIds,
+    sourceKind: req.query.sourceKind,
+  });
   return sendSuccess(res, stats, 'Assignment completion');
 });
 

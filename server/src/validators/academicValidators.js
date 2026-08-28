@@ -159,6 +159,7 @@ export const assignmentSchema = z.object({
   maxMarks: z.coerce.number().positive().max(1000).default(100),
   attachmentUrl: z.string().max(500).optional().nullable(),
   questions: z.array(assignmentQuestionSchema).max(100).optional().nullable(),
+  sourceKind: z.enum(['quiz', 'assignment', 'question_paper']).optional().nullable(),
   isPublished: z.boolean().optional().default(true),
 });
 
@@ -187,6 +188,7 @@ export const assignmentQuerySchema = z.object({
   classId: uuid.optional(),
   subjectId: uuid.optional(),
   status: z.enum(['pending', 'submitted', 'late', 'graded', 'upcoming', 'overdue']).optional(),
+  sourceKind: z.enum(['quiz', 'assignment', 'question_paper']).optional(),
 });
 
 // ────────────────────────────── TIMETABLE ─────────────────────────────────

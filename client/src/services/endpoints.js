@@ -61,7 +61,7 @@ export const assignmentApi = {
   submit: (id, payload) => http.post(`/assignments/${id}/submit`, payload),
   submissions: (id) => http.get(`/assignments/${id}/submissions`),
   grade: (submissionId, payload) => http.post(`/submissions/${submissionId}/grade`, payload),
-  stats: () => http.get('/assignments/stats'),
+  stats: (params) => http.get('/assignments/stats', { params }),
 };
 
 export const academicApi = {

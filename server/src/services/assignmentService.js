@@ -13,8 +13,8 @@ export async function createAssignment(data, teacherId) {
   return queryOne(
     `INSERT INTO assignments
        (title, description, instructions, subject_id, teacher_id, class_id,
-        due_date, max_marks, attachment_url, questions, is_published)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        due_date, max_marks, attachment_url, questions, source_kind, is_published)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
     [
       data.title,
@@ -27,6 +27,7 @@ export async function createAssignment(data, teacherId) {
       data.maxMarks,
       data.attachmentUrl ?? null,
       data.questions ? JSON.stringify(data.questions) : null,
+      data.sourceKind ?? null,
       data.isPublished ?? true,
     ]
   );
@@ -91,7 +92,10 @@ export async function getAssignment(assignmentId) {
  * `derived_status` distinguishes "not submitted and still open" from
  * "not submitted and overdue".
  */
-export async function getStudentAssignments(studentId, { status, subjectId, limit = 100, offset = 0 } = {}) {
+export async function getStudentAssignments(
+  studentId,
+  { status, subjectId, sourceKind, limit = 100, offset = 0 } = {}
+) {
   const conditions = [
     'a.class_id = (SELECT class_id FROM student_profiles WHERE user_id = $1)',
     'a.is_published',
@@ -101,6 +105,11 @@ export async function getStudentAssignments(studentId, { status, subjectId, limi
   if (subjectId) {
     params.push(subjectId);
     conditions.push(`a.subject_id = $${params.length}`);
+  }
+
+  if (sourceKind) {
+    params.push(sourceKind);
+    conditions.push(`a.source_kind = $${params.length}`);
   }
 
   const derivedStatus = `
@@ -128,6 +137,7 @@ export async function getStudentAssignments(studentId, { status, subjectId, limi
   params.push(limit, offset);
   const rows = await queryMany(
     `SELECT a.id, a.title, a.description, a.due_date, a.max_marks, a.attachment_url, a.created_at,
+            a.source_kind,
             s.name AS subject_name, s.code AS subject_code, s.id AS subject_id,
             t.name AS teacher_name,
             su.id AS submission_id, su.submitted_at, su.marks, su.feedback,
@@ -148,7 +158,14 @@ export async function getStudentAssignments(studentId, { status, subjectId, limi
 }
 
 /** Assignments created by a teacher (or across classes, for admin). */
-export async function getTeacherAssignments({ teacherId, classId, subjectId, limit = 100, offset = 0 } = {}) {
+export async function getTeacherAssignments({
+  teacherId,
+  classId,
+  subjectId,
+  sourceKind,
+  limit = 100,
+  offset = 0,
+} = {}) {
   const conditions = [];
   const params = [];
 
@@ -163,6 +180,10 @@ export async function getTeacherAssignments({ teacherId, classId, subjectId, lim
   if (subjectId) {
     params.push(subjectId);
     conditions.push(`a.subject_id = $${params.length}`);
+  }
+  if (sourceKind) {
+    params.push(sourceKind);
+    conditions.push(`a.source_kind = $${params.length}`);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -305,19 +326,21 @@ export async function deleteAssignment(assignmentId) {
 }
 
 /** Completion stats for a class — feeds the teacher and admin dashboards. */
-export async function getCompletionStats({ classIds = null } = {}) {
+export async function getCompletionStats({ classIds = null, sourceKind = null } = {}) {
   if (Array.isArray(classIds) && classIds.length === 0) {
     return { total: 0, submitted: 0, late: 0, graded: 0, pending: 0, completionRate: 0 };
   }
 
   // `$1` is either the class-id array or NULL; a NULL disables the filter, so
-  // one query text covers both the scoped and institution-wide cases.
+  // one query text covers both the scoped and institution-wide cases. Same
+  // for `$2` / sourceKind.
   const row = await queryOne(
     `WITH scoped_assignments AS (
        SELECT a.id, a.class_id
          FROM assignments a
         WHERE a.is_published
           AND ($1::uuid[] IS NULL OR a.class_id = ANY($1::uuid[]))
+          AND ($2::varchar IS NULL OR a.source_kind = $2::varchar)
      ),
      expected AS (
        SELECT COUNT(*)::int AS count
@@ -334,7 +357,7 @@ export async function getCompletionStats({ classIds = null } = {}) {
      )
      SELECT expected.count AS expected, actual.submitted, actual.late, actual.graded
        FROM expected, actual`,
-    [Array.isArray(classIds) ? classIds : null]
+    [Array.isArray(classIds) ? classIds : null, sourceKind]
   );
 
   const expected = row?.expected ?? 0;

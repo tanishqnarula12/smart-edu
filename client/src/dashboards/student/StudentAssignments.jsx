@@ -15,14 +15,18 @@ import { formatDate, formatDateTime, formatRelative, daysUntil, truncate } from 
 import { resolveFileUrl } from '../../utils/fileUrl.js';
 import { cn } from '../../utils/cn.js';
 
-/** Assignment list (§16) with status filtering. */
-export function StudentAssignments() {
+/**
+ * Assignment list (§16) with status filtering. `sourceKind` narrows this to
+ * just the AI-published quizzes when rendered as the student's dedicated
+ * Quizzes section, rather than mixing them into every assignment.
+ */
+export function StudentAssignments({ sourceKind }) {
   const [tab, setTab] = useState('all');
   const [page, setPage] = useState(1);
 
   const { data, isLoading, error, refetch } = useApi(
-    () => assignmentApi.list({ status: tab === 'all' ? undefined : tab, page, limit: 20 }),
-    [tab, page]
+    () => assignmentApi.list({ status: tab === 'all' ? undefined : tab, sourceKind, page, limit: 20 }),
+    [tab, page, sourceKind]
   );
 
   const assignments = data?.data ?? [];
@@ -32,11 +36,17 @@ export function StudentAssignments() {
     return acc;
   }, {});
 
+  const isQuizzes = sourceKind === 'quiz';
+
   return (
     <>
       <PageHeader
-        title="Assignments"
-        description="Everything set for your class, with deadlines and feedback."
+        title={isQuizzes ? 'Quizzes' : 'Assignments'}
+        description={
+          isQuizzes
+            ? 'Quizzes your teachers have published — answer each question, then submit.'
+            : 'Everything set for your class, with deadlines and feedback.'
+        }
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -101,11 +111,11 @@ export function StudentAssignments() {
       ) : assignments.length === 0 ? (
         <EmptyState
           icon={ClipboardList}
-          title={tab === 'all' ? 'No assignments yet' : `No ${tab} assignments`}
+          title={tab === 'all' ? `No ${isQuizzes ? 'quizzes' : 'assignments'} yet` : `No ${tab} ${isQuizzes ? 'quizzes' : 'assignments'}`}
           message={
             tab === 'all'
-              ? 'Assignments set for your class will appear here.'
-              : 'Try a different filter to see other assignments.'
+              ? `${isQuizzes ? 'Quizzes' : 'Assignments'} set for your class will appear here.`
+              : `Try a different filter to see other ${isQuizzes ? 'quizzes' : 'assignments'}.`
           }
         />
       ) : (
@@ -558,6 +568,11 @@ export function StudentAssignmentDetail() {
       </div>
     </>
   );
+}
+
+/** /student/quizzes — the same list, narrowed to published quizzes. */
+export function StudentQuizzes() {
+  return <StudentAssignments sourceKind="quiz" />;
 }
 
 export default StudentAssignments;

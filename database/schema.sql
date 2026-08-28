@@ -396,6 +396,9 @@ CREATE TABLE IF NOT EXISTS assignments (
   -- Structured question list, populated only when published from
   -- AI-generated content — see migrations/002_add_assignment_questions.sql.
   questions      JSONB,
+  -- 'quiz' | 'assignment' | 'question_paper' | NULL (manually created) —
+  -- see migrations/003_add_assignment_source_kind.sql.
+  source_kind    VARCHAR(20),
   is_published   BOOLEAN NOT NULL DEFAULT TRUE,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()

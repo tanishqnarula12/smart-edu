@@ -9,6 +9,7 @@ import {
   Award,
   Trash2,
   Sparkles,
+  FlaskConical,
 } from 'lucide-react';
 import { assignmentApi, teacherApi } from '../../services/endpoints.js';
 import { useApi } from '../../hooks/useApi.js';
@@ -38,8 +39,12 @@ import { formatDateTime, formatRelative, formatPercent } from '../../utils/forma
 import { resolveFileUrl } from '../../utils/fileUrl.js';
 import { cn } from '../../utils/cn.js';
 
-/** Teacher assignments (§11): create, track submissions and grade. */
-export function TeacherAssignments() {
+/**
+ * Teacher assignments (§11): create, track submissions and grade.
+ * `sourceKind` narrows this to just quizzes, for the "Quiz progress" view —
+ * same list, same grading drawer, just scoped and re-labelled.
+ */
+export function TeacherAssignments({ sourceKind }) {
   const toast = useToast();
 
   const [isCreateOpen, setCreateOpen] = useState(false);
@@ -48,10 +53,10 @@ export function TeacherAssignments() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading, error, refetch } = useApi(
-    () => assignmentApi.list({ page, limit: 20 }),
-    [page]
+    () => assignmentApi.list({ page, limit: 20, sourceKind }),
+    [page, sourceKind]
   );
-  const { data: stats } = useApi(() => assignmentApi.stats(), []);
+  const { data: stats } = useApi(() => assignmentApi.stats({ sourceKind }), [sourceKind]);
 
   const remove = async () => {
     try {
@@ -65,21 +70,32 @@ export function TeacherAssignments() {
   };
 
   const assignments = data?.data ?? [];
+  const isQuizProgress = sourceKind === 'quiz';
 
   return (
     <>
       <PageHeader
-        title="Assignments"
-        description="Set work, track who has submitted, and grade."
+        title={isQuizProgress ? 'Quiz progress' : 'Assignments'}
+        description={
+          isQuizProgress
+            ? 'Completion and grading for every quiz you have published.'
+            : 'Set work, track who has submitted, and grade.'
+        }
         action={
-          <div className="flex gap-2">
-            <Button to="/teacher/ai-tools" variant="secondary" icon={Sparkles}>
-              Generate
+          isQuizProgress ? (
+            <Button to="/teacher/ai-tools" icon={Sparkles}>
+              Generate a quiz
             </Button>
-            <Button icon={Plus} onClick={() => setCreateOpen(true)}>
-              New assignment
-            </Button>
-          </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button to="/teacher/ai-tools" variant="secondary" icon={Sparkles}>
+                Generate
+              </Button>
+              <Button icon={Plus} onClick={() => setCreateOpen(true)}>
+                New assignment
+              </Button>
+            </div>
+          )
         }
       />
 
@@ -113,13 +129,23 @@ export function TeacherAssignments() {
         <LoadingSkeleton count={4} height="h-28" />
       ) : assignments.length === 0 ? (
         <EmptyState
-          icon={ClipboardList}
-          title="No assignments yet"
-          message="Create your first assignment, or generate one with the AI tools."
+          icon={isQuizProgress ? FlaskConical : ClipboardList}
+          title={isQuizProgress ? 'No quizzes published yet' : 'No assignments yet'}
+          message={
+            isQuizProgress
+              ? 'Generate a quiz from the AI tools and publish it to a class to see progress here.'
+              : 'Create your first assignment, or generate one with the AI tools.'
+          }
           action={
-            <Button icon={Plus} onClick={() => setCreateOpen(true)}>
-              New assignment
-            </Button>
+            isQuizProgress ? (
+              <Button to="/teacher/ai-tools" icon={Sparkles}>
+                Generate a quiz
+              </Button>
+            ) : (
+              <Button icon={Plus} onClick={() => setCreateOpen(true)}>
+                New assignment
+              </Button>
+            )
           }
         />
       ) : (
@@ -270,6 +296,7 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
   // Structured questions aren't a plain form field — react-hook-form only
   // tracks inputs a user types into, not JSON handed over from a generator.
   const [questions, setQuestions] = useState(null);
+  const [sourceKind, setSourceKind] = useState(null);
 
   const { data: assignments } = useApi(() => teacherApi.myClasses(), []);
 
@@ -307,6 +334,7 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
     setValue('instructions', prefill.instructions ?? '');
     if (prefill.maxMarks) setValue('maxMarks', prefill.maxMarks);
     setQuestions(prefill.questions ?? null);
+    setSourceKind(prefill.sourceKind ?? null);
   }, [prefill, setValue]);
 
   const submit = async (values) => {
@@ -315,11 +343,13 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
         ...values,
         classId,
         questions,
+        sourceKind,
         dueDate: new Date(values.dueDate).toISOString(),
       });
       toast.success('Assignment created and published to the class');
       reset({ maxMarks: 20, isPublished: true });
       setQuestions(null);
+      setSourceKind(null);
       onCreated();
     } catch (error) {
       toast.error(error.message);
@@ -604,6 +634,11 @@ function GradingDrawer({ assignmentId, onClose }) {
       )}
     </Drawer>
   );
+}
+
+/** /teacher/quiz-progress — the same list and grading drawer, scoped to quizzes. */
+export function TeacherQuizProgress() {
+  return <TeacherAssignments sourceKind="quiz" />;
 }
 
 export { CreateAssignmentModal };

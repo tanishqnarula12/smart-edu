@@ -58,6 +58,7 @@ function quizToAssignmentPrefill(quiz) {
     description: `${quiz.questionCount} questions · ${quiz.totalMarks} marks · ${humanise(quiz.difficulty)}`,
     instructions: 'Answer each question in its own box below — no file upload needed.',
     maxMarks: quiz.totalMarks,
+    sourceKind: 'quiz',
     questions: quiz.questions.map((question, index) => ({
       number: question.number ?? index + 1,
       question: question.question,
@@ -77,6 +78,7 @@ function assignmentToPrefill(assignment) {
     description: [assignment.introduction, objectives].filter(Boolean).join('\n\n'),
     instructions: 'Answer each task in its own box below, or attach a file for the whole assignment.',
     maxMarks: assignment.totalMarks,
+    sourceKind: 'assignment',
     questions: assignment.tasks.map((task) => ({
       number: task.number,
       question: task.task,
@@ -96,6 +98,7 @@ function paperToPrefill(paper) {
     description: [`${paper.subject} · ${paper.totalMarks} marks`, header].filter(Boolean).join('\n\n'),
     instructions: `Time allowed: ${Math.floor(paper.durationMinutes / 60)}h ${paper.durationMinutes % 60}m. Answer each question in its own box below.`,
     maxMarks: paper.totalMarks,
+    sourceKind: 'question_paper',
     questions: paper.sections.flatMap((section) =>
       section.questions.map((question) => ({
         number: question.number,

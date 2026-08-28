@@ -53,6 +53,9 @@ const StudentMarks = lazy(() =>
 const StudentAssignments = lazy(() =>
   import('./dashboards/student/StudentAssignments.jsx').then((m) => ({ default: m.StudentAssignments }))
 );
+const StudentQuizzes = lazy(() =>
+  import('./dashboards/student/StudentAssignments.jsx').then((m) => ({ default: m.StudentQuizzes }))
+);
 const StudentAssignmentDetail = lazy(() =>
   import('./dashboards/student/StudentAssignments.jsx').then((m) => ({
     default: m.StudentAssignmentDetail,
@@ -117,6 +120,9 @@ const TeacherMarks = lazy(() =>
 const TeacherAssignments = lazy(() =>
   import('./dashboards/teacher/TeacherAssignments.jsx').then((m) => ({ default: m.TeacherAssignments }))
 );
+const TeacherQuizProgress = lazy(() =>
+  import('./dashboards/teacher/TeacherAssignments.jsx').then((m) => ({ default: m.TeacherQuizProgress }))
+);
 const TeacherClasses = lazy(() =>
   import('./dashboards/teacher/TeacherClasses.jsx').then((m) => ({ default: m.TeacherClasses }))
 );
@@ -128,6 +134,9 @@ const TeacherAITools = lazy(() =>
 );
 const TeacherLibrary = lazy(() =>
   import('./dashboards/teacher/TeacherAITools.jsx').then((m) => ({ default: m.TeacherLibrary }))
+);
+const TeacherMeetings = lazy(() =>
+  import('./dashboards/teacher/TeacherMeetings.jsx').then((m) => ({ default: m.TeacherMeetings }))
 );
 
 // Admin
@@ -223,6 +232,7 @@ export function App() {
                       <Route path="marks" element={<StudentMarks />} />
                       <Route path="assignments" element={<StudentAssignments />} />
                       <Route path="assignments/:id" element={<StudentAssignmentDetail />} />
+                      <Route path="quizzes" element={<StudentQuizzes />} />
                       <Route path="timetable" element={<Timetable />} />
                       <Route path="exams" element={<Exams />} />
                       <Route path="calendar" element={<Calendar />} />
@@ -269,12 +279,13 @@ export function App() {
                       <Route path="attendance" element={<TeacherAttendance />} />
                       <Route path="marks" element={<TeacherMarks />} />
                       <Route path="assignments" element={<TeacherAssignments />} />
+                      <Route path="quiz-progress" element={<TeacherQuizProgress />} />
                       <Route
                         path="quizzes"
                         element={
                           <TeacherLibrary
                             kind="quiz"
-                            title="Quizzes"
+                            title="Quiz library"
                             description="Quizzes you have generated and saved."
                           />
                         }
@@ -301,6 +312,7 @@ export function App() {
                       />
                       <Route path="reports" element={<Reports />} />
                       <Route path="timetable" element={<Timetable />} />
+                      <Route path="meetings" element={<TeacherMeetings />} />
                       <Route path="notices" element={<NoticesManager />} />
                       <Route path="leave" element={<LeaveManager />} />
                       <Route path="ai-tools" element={<TeacherAITools />} />
