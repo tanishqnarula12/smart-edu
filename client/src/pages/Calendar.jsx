@@ -13,7 +13,7 @@ import { cn } from '../utils/cn.js';
  * Built with plain date arithmetic rather than a calendar library — the grid
  * is six rows of seven, and everything else is a lookup by ISO date.
  */
-export function Calendar({ studentId }) {
+export function Calendar({ studentId, headerExtra }) {
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -91,7 +91,9 @@ export function Calendar({ studentId }) {
 
   return (
     <>
-      <PageHeader title="Calendar" description="Exams and assignment deadlines in one view." />
+      <PageHeader title="Calendar" description="Exams and assignment deadlines in one view.">
+        {headerExtra}
+      </PageHeader>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -128,48 +130,95 @@ export function Calendar({ studentId }) {
             {cells.map((cell) => {
               const events = eventsByDate.get(cell.iso) ?? [];
               const isSelected = cell.iso === selected;
+              const visibleDots = events.slice(0, 3);
+              const overflowCount = events.length - visibleDots.length;
 
               return (
-                <button
-                  key={cell.iso}
-                  type="button"
-                  onClick={() => setSelected(cell.iso)}
-                  aria-label={`${formatDate(cell.date)}${events.length ? `, ${events.length} event(s)` : ''}`}
-                  aria-current={cell.isToday ? 'date' : undefined}
-                  className={cn(
-                    'relative flex aspect-square flex-col items-center justify-start rounded-lg p-1 text-xs transition sm:p-1.5',
-                    !cell.isCurrentMonth && 'opacity-35',
-                    isSelected
-                      ? 'bg-brand-600 text-white'
-                      : cell.isToday
-                        ? 'bg-brand-50 font-semibold text-brand-700 dark:bg-brand-950/50 dark:text-brand-300'
-                        : 'hover:bg-surface-sunken'
-                  )}
-                >
-                  <span className={cn('tabular-nums', cell.isToday && !isSelected && 'font-bold')}>
-                    {cell.date.getDate()}
-                  </span>
-
-                  {events.length > 0 && (
-                    <span className="mt-auto flex gap-0.5">
-                      {events.slice(0, 3).map((event, index) => (
-                        <span
-                          key={index}
-                          className={cn(
-                            'h-1 w-1 rounded-full',
-                            isSelected
-                              ? 'bg-white'
-                              : event.tone === 'danger'
-                                ? 'bg-danger-500'
-                                : event.tone === 'success'
-                                  ? 'bg-success-500'
-                                  : 'bg-warning-500'
-                          )}
-                        />
-                      ))}
+                <div key={cell.iso} className="group/day relative">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(cell.iso)}
+                    aria-label={`${formatDate(cell.date)}${events.length ? `, ${events.length} event(s)` : ''}`}
+                    aria-current={cell.isToday ? 'date' : undefined}
+                    className={cn(
+                      'relative flex aspect-square w-full flex-col items-center justify-start rounded-lg p-1 text-xs transition-all duration-150 sm:p-1.5',
+                      !cell.isCurrentMonth && 'opacity-35',
+                      isSelected
+                        ? 'bg-brand-600 text-white shadow-card'
+                        : cell.isToday
+                          ? 'bg-brand-50 font-semibold text-brand-700 hover:-translate-y-0.5 hover:shadow-card dark:bg-brand-950/50 dark:text-brand-300'
+                          : 'hover:-translate-y-0.5 hover:bg-surface-sunken hover:shadow-card'
+                    )}
+                  >
+                    <span className={cn('tabular-nums', cell.isToday && !isSelected && 'font-bold')}>
+                      {cell.date.getDate()}
                     </span>
+
+                    {events.length > 0 && (
+                      <span className="mt-auto flex items-center gap-0.5">
+                        {visibleDots.map((event, index) => (
+                          <span
+                            key={index}
+                            className={cn(
+                              'h-1 w-1 rounded-full',
+                              isSelected
+                                ? 'bg-white'
+                                : event.tone === 'danger'
+                                  ? 'bg-danger-500'
+                                  : event.tone === 'success'
+                                    ? 'bg-success-500'
+                                    : 'bg-warning-500'
+                            )}
+                          />
+                        ))}
+                        {overflowCount > 0 && (
+                          <span
+                            className={cn(
+                              'text-[9px] font-bold leading-none',
+                              isSelected ? 'text-white' : 'text-ink-subtle'
+                            )}
+                          >
+                            +{overflowCount}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Hover/focus preview — only when there is something to show. */}
+                  {events.length > 0 && (
+                    <div
+                      role="tooltip"
+                      className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 w-48 -translate-x-1/2 rounded-xl border border-line bg-surface-raised p-2.5 text-left opacity-0 shadow-popover transition-opacity duration-150 group-hover/day:opacity-100 group-focus-within/day:opacity-100"
+                    >
+                      <p className="mb-1.5 text-[11px] font-semibold text-ink-subtle">
+                        {formatDate(cell.date)}
+                      </p>
+                      <ul className="space-y-1">
+                        {events.slice(0, 4).map((event, index) => (
+                          <li key={index} className="flex items-start gap-1.5 text-xs text-ink">
+                            <span
+                              className={cn(
+                                'mt-1 h-1.5 w-1.5 shrink-0 rounded-full',
+                                event.tone === 'danger'
+                                  ? 'bg-danger-500'
+                                  : event.tone === 'success'
+                                    ? 'bg-success-500'
+                                    : 'bg-warning-500'
+                              )}
+                            />
+                            <span className="truncate">{event.title}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {events.length > 4 && (
+                        <p className="mt-1.5 text-[11px] text-ink-subtle">
+                          +{events.length - 4} more — click the day to see all
+                        </p>
+                      )}
+                    </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>

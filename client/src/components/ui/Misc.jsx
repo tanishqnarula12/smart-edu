@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '../../utils/cn.js';
 import { initials } from '../../utils/format.js';
+import { resolveFileUrl } from '../../utils/fileUrl.js';
 
 /** Smaller shared primitives: avatar, tabs, progress, breadcrumbs, tooltip. */
 
@@ -43,7 +44,7 @@ export function Avatar({ name, src, size = 'md', className, ring = false }) {
   if (src && !failed) {
     return (
       <img
-        src={src}
+        src={resolveFileUrl(src)}
         alt={name ? `${name}'s avatar` : 'Avatar'}
         onError={() => setFailed(true)}
         className={cn(classes, 'object-cover')}

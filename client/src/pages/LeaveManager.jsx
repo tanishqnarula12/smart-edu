@@ -9,6 +9,7 @@ import {
   EmptyState, ErrorState, LoadingSkeleton, Pagination,
 } from '../components/ui/index.js';
 import { formatDate, humanise } from '../utils/format.js';
+import { resolveFileUrl } from '../utils/fileUrl.js';
 import { cn } from '../utils/cn.js';
 
 /** Leave review for teachers and admins (§16, §19). */
@@ -152,7 +153,7 @@ export function LeaveManager() {
 
                           {application.attachmentUrl && (
                             <a
-                              href={application.attachmentUrl}
+                              href={resolveFileUrl(application.attachmentUrl)}
                               target="_blank"
                               rel="noreferrer"
                               className="mt-2 inline-block text-xs font-medium text-brand-600 hover:underline"

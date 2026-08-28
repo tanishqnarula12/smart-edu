@@ -13,8 +13,8 @@ export async function createAssignment(data, teacherId) {
   return queryOne(
     `INSERT INTO assignments
        (title, description, instructions, subject_id, teacher_id, class_id,
-        due_date, max_marks, attachment_url, is_published)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        due_date, max_marks, attachment_url, questions, is_published)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
     [
       data.title,
@@ -26,6 +26,7 @@ export async function createAssignment(data, teacherId) {
       data.dueDate,
       data.maxMarks,
       data.attachmentUrl ?? null,
+      data.questions ? JSON.stringify(data.questions) : null,
       data.isPublished ?? true,
     ]
   );
@@ -51,6 +52,10 @@ export async function updateAssignment(assignmentId, data) {
       params.push(data[key]);
       updates.push(`${column} = $${params.length}`);
     }
+  }
+  if (data.questions !== undefined) {
+    params.push(data.questions ? JSON.stringify(data.questions) : null);
+    updates.push(`questions = $${params.length}`);
   }
   if (!updates.length) throw ApiError.badRequest('Provide at least one field to update');
 

@@ -27,6 +27,7 @@ import {
   Avatar,
 } from '../../components/ui/index.js';
 import { TrendChart, ComparisonBarChart, SubjectRadar } from '../../charts/Charts.jsx';
+import { Calendar } from '../../pages/Calendar.jsx';
 import { ChildSelector } from './ChildSelector.jsx';
 import { formatPercent, formatDate, humanise } from '../../utils/format.js';
 import { ATTENDANCE_THRESHOLD, attendanceTone, scoreTone, CHART_COLORS } from '../../utils/constants.js';
@@ -534,6 +535,59 @@ export function ParentPerformance() {
         );
       }}
     </ParentSection>
+  );
+}
+
+/**
+ * /parent/calendar — the shared `Calendar` needs a `studentId` to fetch
+ * anything at all; without one the exam/assignment endpoints reject a
+ * parent's request outright (they don't know who "your" exams belong to),
+ * which is why an unwired parent calendar renders as permanently empty.
+ */
+export function ParentCalendar() {
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const { data: childList, isLoading } = useApi(() => parentApi.children(), []);
+
+  const child = selectedChildId
+    ? childList?.find((candidate) => candidate.id === selectedChildId)
+    : childList?.[0];
+
+  if (isLoading) {
+    return (
+      <>
+        <PageHeader title="Calendar" description="Exams and assignment deadlines in one view." />
+        <LoadingSkeleton count={4} height="h-24" />
+      </>
+    );
+  }
+
+  if (!childList?.length) {
+    return (
+      <>
+        <PageHeader title="Calendar" description="Exams and assignment deadlines in one view." />
+        <EmptyState
+          icon={Users}
+          title="No children linked"
+          message="Ask your administrator to link your child's account to yours."
+        />
+      </>
+    );
+  }
+
+  return (
+    <Calendar
+      studentId={child.id}
+      headerExtra={
+        childList.length > 1 && (
+          <ChildSelector
+            students={childList}
+            selectedId={child?.id}
+            onSelect={setSelectedChildId}
+            className="mt-4"
+          />
+        )
+      }
+    />
   );
 }
 

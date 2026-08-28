@@ -12,6 +12,7 @@ import {
   ErrorState, PageLoader, Callout, Badge, ProgressBar,
 } from '../../components/ui/index.js';
 import { formatDate, formatDateTime, formatRelative, daysUntil, truncate } from '../../utils/format.js';
+import { resolveFileUrl } from '../../utils/fileUrl.js';
 import { cn } from '../../utils/cn.js';
 
 /** Assignment list (§16) with status filtering. */
@@ -209,28 +210,53 @@ export function StudentAssignmentDetail() {
   const toast = useToast();
 
   const [content, setContent] = useState('');
+  const [answers, setAnswers] = useState({});
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data, isLoading, error, refetch } = useApi(() => assignmentApi.get(id), [id]);
 
+  const hasQuestions = Boolean(data?.questions?.length);
+
+  // A structured assignment gets one answer box per question on screen, but
+  // still lands in the same single `content` field the grading view already
+  // reads — no schema change needed on the submission side for this.
+  const buildQuestionAnswerContent = () =>
+    data.questions
+      .map((question, index) => {
+        const answer = (answers[question.number ?? index] ?? '').trim();
+        return `Q${question.number ?? index + 1}. ${question.question}\nAnswer: ${answer || '(no answer provided)'}`;
+      })
+      .join('\n\n');
+
   const submit = async (event) => {
     event.preventDefault();
 
-    if (!content.trim() && !file) {
+    if (hasQuestions) {
+      const answered = data.questions.some((question, index) =>
+        (answers[question.number ?? index] ?? '').trim()
+      );
+      if (!answered && !file) {
+        toast.error('Answer at least one question or attach a file before submitting');
+        return;
+      }
+    } else if (!content.trim() && !file) {
       toast.error('Attach a file or write your answer before submitting');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const combinedContent = hasQuestions ? buildQuestionAnswerContent() : content.trim();
+
       const payload = new FormData();
-      if (content.trim()) payload.append('content', content.trim());
+      if (combinedContent) payload.append('content', combinedContent);
       if (file) payload.append('file', file);
 
       await assignmentApi.submit(id, payload);
       toast.success('Assignment submitted');
       setContent('');
+      setAnswers({});
       setFile(null);
       refetch();
     } catch (submitError) {
@@ -295,7 +321,7 @@ export function StudentAssignmentDetail() {
 
               {data.attachmentUrl && (
                 <a
-                  href={data.attachmentUrl}
+                  href={resolveFileUrl(data.attachmentUrl)}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface-sunken px-3 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-50"
@@ -327,7 +353,7 @@ export function StudentAssignmentDetail() {
 
                 {data.submission.submissionUrl && (
                   <a
-                    href={data.submission.submissionUrl}
+                    href={resolveFileUrl(data.submission.submissionUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-brand-600 transition hover:bg-brand-50"
@@ -378,20 +404,80 @@ export function StudentAssignmentDetail() {
                 subtitle={
                   hasSubmission
                     ? 'Submitting again replaces your previous answer.'
-                    : 'Write your answer, attach a file, or both.'
+                    : hasQuestions
+                      ? 'Answer each question in its own box below.'
+                      : 'Write your answer, attach a file, or both.'
                 }
                 icon={Upload}
               />
 
               <form onSubmit={submit} className="mt-4 space-y-4">
-                <Textarea
-                  label="Your answer"
-                  value={content}
-                  onChange={(event) => setContent(event.target.value)}
-                  placeholder="Type your answer here…"
-                  rows={7}
-                  hint="Optional if you are attaching a file"
-                />
+                {hasQuestions ? (
+                  <div className="space-y-3">
+                    {data.questions.map((question, index) => {
+                      const key = question.number ?? index;
+                      const showSectionHeading =
+                        question.section && question.section !== data.questions[index - 1]?.section;
+
+                      return (
+                        <div key={key}>
+                          {showSectionHeading && (
+                            <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-ink-subtle first:mt-0">
+                              {question.section}
+                            </p>
+                          )}
+                          <div className="rounded-xl border border-line p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="text-sm font-medium leading-relaxed text-ink">
+                                {question.number ?? index + 1}. {question.question}
+                              </p>
+                              {question.marks != null && (
+                                <Badge tone="info" size="sm" className="shrink-0">
+                                  {question.marks} marks
+                                </Badge>
+                              )}
+                            </div>
+
+                            {question.guidance && (
+                              <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">
+                                {question.guidance}
+                              </p>
+                            )}
+
+                            {question.options?.length > 0 && (
+                              <ul className="mt-2 space-y-1">
+                                {question.options.map((option, optionIndex) => (
+                                  <li key={optionIndex} className="text-xs text-ink-muted">
+                                    {String.fromCharCode(65 + optionIndex)}. {option}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+
+                            <Textarea
+                              className="mt-3"
+                              value={answers[key] ?? ''}
+                              onChange={(event) =>
+                                setAnswers((current) => ({ ...current, [key]: event.target.value }))
+                              }
+                              placeholder="Type your answer…"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Textarea
+                    label="Your answer"
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    placeholder="Type your answer here…"
+                    rows={7}
+                    hint="Optional if you are attaching a file"
+                  />
+                )}
 
                 <div>
                   <label

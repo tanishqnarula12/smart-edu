@@ -96,6 +96,9 @@ const ParentAssignments = lazy(() =>
 const ParentPerformance = lazy(() =>
   import('./dashboards/parent/ParentSections.jsx').then((m) => ({ default: m.ParentPerformance }))
 );
+const ParentCalendar = lazy(() =>
+  import('./dashboards/parent/ParentSections.jsx').then((m) => ({ default: m.ParentCalendar }))
+);
 const Fees = lazy(() => import('./dashboards/parent/ParentFees.jsx').then((m) => ({ default: m.Fees })));
 const ParentPTM = lazy(() =>
   import('./dashboards/parent/ParentPTM.jsx').then((m) => ({ default: m.ParentPTM }))
@@ -244,7 +247,7 @@ export function App() {
                       <Route path="marks" element={<ParentMarks />} />
                       <Route path="assignments" element={<ParentAssignments />} />
                       <Route path="performance" element={<ParentPerformance />} />
-                      <Route path="calendar" element={<Calendar />} />
+                      <Route path="calendar" element={<ParentCalendar />} />
                       <Route path="notices" element={<Notifications defaultTab="notices" />} />
                       <Route path="fees" element={<Fees forParent />} />
                       <Route path="ptm" element={<ParentPTM />} />
@@ -283,6 +286,16 @@ export function App() {
                             kind="question_paper"
                             title="Question papers"
                             description="Examination papers you have generated and saved."
+                          />
+                        }
+                      />
+                      <Route
+                        path="assignments-library"
+                        element={
+                          <TeacherLibrary
+                            kind="assignment"
+                            title="Saved assignments"
+                            description="Assignments you have generated and saved — publish any of them to a class."
                           />
                         }
                       />

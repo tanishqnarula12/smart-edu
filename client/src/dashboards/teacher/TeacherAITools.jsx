@@ -45,70 +45,75 @@ import { BLOOM_LEVELS, QUESTION_TYPES } from '../../utils/constants.js';
 import { cn } from '../../utils/cn.js';
 
 /**
- * Turn generated content into the plain-text `description` an assignment
- * shows students — deliberately dropping every `answer`/`explanation` field,
- * since publishing a quiz or paper must never hand the class its own key.
+ * Turn generated content into an assignment a student can actually answer
+ * one question at a time — a structured `questions` array (rendered as its
+ * own box per question) plus a short `description`, rather than dumping
+ * everything into one wall of text with a single answer box underneath.
+ * Every mapper deliberately drops `answer`/`explanation` — publishing a
+ * quiz or paper must never hand the class its own key.
  */
-function formatQuestionsForStudents(questions) {
-  return questions
-    .map((question, index) => {
-      const options = question.options
-        ?.map((option, i) => `   ${String.fromCharCode(65 + i)}. ${option}`)
-        .join('\n');
-      return `${question.number ?? index + 1}. ${question.question} [${question.marks} marks]${
-        options ? `\n${options}` : ''
-      }`;
-    })
-    .join('\n\n');
-}
-
 function quizToAssignmentPrefill(quiz) {
   return {
     title: quiz.title,
-    description: `${quiz.questionCount} questions · ${quiz.totalMarks} marks · ${humanise(quiz.difficulty)}\n\n${formatQuestionsForStudents(quiz.questions)}`,
-    instructions: 'Answer directly in your submission — type your answers, no file upload needed.',
+    description: `${quiz.questionCount} questions · ${quiz.totalMarks} marks · ${humanise(quiz.difficulty)}`,
+    instructions: 'Answer each question in its own box below — no file upload needed.',
     maxMarks: quiz.totalMarks,
+    questions: quiz.questions.map((question, index) => ({
+      number: question.number ?? index + 1,
+      question: question.question,
+      marks: question.marks,
+      options: question.options,
+    })),
   };
 }
 
 function assignmentToPrefill(assignment) {
   const objectives = assignment.objectives?.length
-    ? `Learning objectives:\n${assignment.objectives.map((o) => `- ${o}`).join('\n')}\n\n`
+    ? `Learning objectives:\n${assignment.objectives.map((o) => `- ${o}`).join('\n')}`
     : '';
-  const tasks = assignment.tasks
-    .map(
-      (task) =>
-        `${task.number}. ${task.task} [${task.marks} marks]${task.guidance ? `\n   ${task.guidance}` : ''}`
-    )
-    .join('\n\n');
 
   return {
     title: assignment.title,
-    description: `${assignment.introduction ? `${assignment.introduction}\n\n` : ''}${objectives}${tasks}`,
-    instructions: 'Submit either as a file upload or typed directly, whichever suits the task.',
+    description: [assignment.introduction, objectives].filter(Boolean).join('\n\n'),
+    instructions: 'Answer each task in its own box below, or attach a file for the whole assignment.',
     maxMarks: assignment.totalMarks,
+    questions: assignment.tasks.map((task) => ({
+      number: task.number,
+      question: task.task,
+      marks: task.marks,
+      guidance: task.guidance,
+    })),
   };
 }
 
 function paperToPrefill(paper) {
-  const sections = paper.sections
-    .map((section) => {
-      const questions = formatQuestionsForStudents(section.questions);
-      return `${section.name} (${section.marks} marks)\n${section.instructions}\n\n${questions}`;
-    })
-    .join('\n\n───\n\n');
-
   const header = paper.instructions?.length
-    ? `${paper.instructions.map((instruction, i) => `${i + 1}. ${instruction}`).join('\n')}\n\n`
+    ? paper.instructions.map((instruction, i) => `${i + 1}. ${instruction}`).join('\n')
     : '';
 
   return {
     title: paper.title,
-    description: `${header}${sections}`,
-    instructions: `Time allowed: ${Math.floor(paper.durationMinutes / 60)}h ${paper.durationMinutes % 60}m. Answer directly in your submission.`,
+    description: [`${paper.subject} · ${paper.totalMarks} marks`, header].filter(Boolean).join('\n\n'),
+    instructions: `Time allowed: ${Math.floor(paper.durationMinutes / 60)}h ${paper.durationMinutes % 60}m. Answer each question in its own box below.`,
     maxMarks: paper.totalMarks,
+    questions: paper.sections.flatMap((section) =>
+      section.questions.map((question) => ({
+        number: question.number,
+        question: question.question,
+        marks: question.marks,
+        options: question.options,
+        section: section.name,
+      }))
+    ),
   };
 }
+
+/** Per-`kind` display and publish behaviour shared by the library view. */
+const LIBRARY_KIND_META = {
+  quiz: { icon: FlaskConical, plural: 'quizzes', toPrefill: quizToAssignmentPrefill },
+  assignment: { icon: ClipboardList, plural: 'assignments', toPrefill: assignmentToPrefill },
+  question_paper: { icon: FileSpreadsheet, plural: 'question papers', toPrefill: paperToPrefill },
+};
 
 /** Teacher AI tools (§23–§26): generators, natural-language search and chat. */
 export function TeacherAITools() {
@@ -1052,6 +1057,8 @@ function NaturalLanguageSearch() {
 export function TeacherLibrary({ kind = 'quiz', title, description }) {
   const toast = useToast();
   const [toDelete, setToDelete] = useState(null);
+  const [publishPrefill, setPublishPrefill] = useState(null);
+  const meta = LIBRARY_KIND_META[kind] ?? LIBRARY_KIND_META.quiz;
 
   const { data, isLoading, error, refetch } = useApi(() => aiApi.saved({ kind }), [kind]);
 
@@ -1084,8 +1091,8 @@ export function TeacherLibrary({ kind = 'quiz', title, description }) {
         <LoadingSkeleton count={3} height="h-32" />
       ) : !data?.length ? (
         <EmptyState
-          icon={kind === 'quiz' ? FlaskConical : FileSpreadsheet}
-          title={`No saved ${kind === 'quiz' ? 'quizzes' : 'question papers'}`}
+          icon={meta.icon}
+          title={`No saved ${meta.plural}`}
           message="Generate one from the AI tools and save it here for reuse."
           action={
             <Button to="/teacher/ai-tools" icon={Sparkles}>
@@ -1144,6 +1151,15 @@ export function TeacherLibrary({ kind = 'quiz', title, description }) {
                   <dd>{formatRelative(item.created_at)}</dd>
                 </div>
               </dl>
+
+              <Button
+                size="sm"
+                icon={Send}
+                className="mt-4"
+                onClick={() => setPublishPrefill(meta.toPrefill(item.payload))}
+              >
+                Publish to a class
+              </Button>
             </Card>
           ))}
         </div>
@@ -1156,6 +1172,16 @@ export function TeacherLibrary({ kind = 'quiz', title, description }) {
         title="Delete this item?"
         message={toDelete ? `"${toDelete.title}" will be permanently removed.` : ''}
         confirmLabel="Delete"
+      />
+
+      <CreateAssignmentModal
+        isOpen={Boolean(publishPrefill)}
+        onClose={() => setPublishPrefill(null)}
+        prefill={publishPrefill}
+        onCreated={() => {
+          setPublishPrefill(null);
+          toast.success('Published — students in that class have been notified');
+        }}
       />
     </>
   );

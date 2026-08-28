@@ -137,6 +137,18 @@ export const marksQuerySchema = z.object({
 
 // ───────────────────────────── ASSIGNMENTS ────────────────────────────────
 
+// Structured question shown as its own answer box on the student side —
+// populated only when an assignment is published from AI-generated content.
+// Never carries an answer/explanation field; those stay out of student view.
+const assignmentQuestionSchema = z.object({
+  number: z.coerce.number().optional(),
+  question: z.string().max(2000),
+  marks: z.coerce.number().optional(),
+  options: z.array(z.string().max(500)).optional(),
+  guidance: z.string().max(1000).optional(),
+  section: z.string().max(200).optional(),
+});
+
 export const assignmentSchema = z.object({
   title: z.string().trim().min(3, 'Title must be at least 3 characters').max(200),
   description: z.string().max(4000).optional().nullable(),
@@ -146,6 +158,7 @@ export const assignmentSchema = z.object({
   dueDate: isoDateTime,
   maxMarks: z.coerce.number().positive().max(1000).default(100),
   attachmentUrl: z.string().max(500).optional().nullable(),
+  questions: z.array(assignmentQuestionSchema).max(100).optional().nullable(),
   isPublished: z.boolean().optional().default(true),
 });
 

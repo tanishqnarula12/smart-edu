@@ -135,6 +135,7 @@ export const getAssignment = asyncHandler(async (req, res) => {
         dueDate: assignment.due_date,
         maxMarks: assignment.max_marks,
         attachmentUrl: assignment.attachment_url,
+        questions: assignment.questions,
         subjectName: assignment.subject_name,
         teacherName: assignment.teacher_name,
         status: own.derived_status,

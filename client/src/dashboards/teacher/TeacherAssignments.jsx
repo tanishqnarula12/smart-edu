@@ -32,8 +32,10 @@ import {
   LoadingSkeleton,
   ProgressBar,
   ConfirmDialog,
+  Callout,
 } from '../../components/ui/index.js';
 import { formatDateTime, formatRelative, formatPercent } from '../../utils/format.js';
+import { resolveFileUrl } from '../../utils/fileUrl.js';
 import { cn } from '../../utils/cn.js';
 
 /** Teacher assignments (§11): create, track submissions and grade. */
@@ -265,6 +267,9 @@ export function TeacherAssignments() {
 function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
   const toast = useToast();
   const [classId, setClassId] = useState('');
+  // Structured questions aren't a plain form field — react-hook-form only
+  // tracks inputs a user types into, not JSON handed over from a generator.
+  const [questions, setQuestions] = useState(null);
 
   const { data: assignments } = useApi(() => teacherApi.myClasses(), []);
 
@@ -301,13 +306,20 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
     setValue('description', prefill.description ?? '');
     setValue('instructions', prefill.instructions ?? '');
     if (prefill.maxMarks) setValue('maxMarks', prefill.maxMarks);
+    setQuestions(prefill.questions ?? null);
   }, [prefill, setValue]);
 
   const submit = async (values) => {
     try {
-      await assignmentApi.create({ ...values, classId, dueDate: new Date(values.dueDate).toISOString() });
+      await assignmentApi.create({
+        ...values,
+        classId,
+        questions,
+        dueDate: new Date(values.dueDate).toISOString(),
+      });
       toast.success('Assignment created and published to the class');
       reset({ maxMarks: 20, isPublished: true });
+      setQuestions(null);
       onCreated();
     } catch (error) {
       toast.error(error.message);
@@ -380,6 +392,13 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
           rows={3}
           {...register('instructions')}
         />
+
+        {questions?.length > 0 && (
+          <Callout tone="info">
+            {questions.length} question{questions.length === 1 ? '' : 's'} will be attached, each as
+            its own answer box for students.
+          </Callout>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <DatePicker
@@ -525,7 +544,7 @@ function GradingDrawer({ assignmentId, onClose }) {
 
                     {submission.submissionUrl && (
                       <a
-                        href={submission.submissionUrl}
+                        href={resolveFileUrl(submission.submissionUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="mt-3 inline-block text-xs font-medium text-brand-600 hover:underline"

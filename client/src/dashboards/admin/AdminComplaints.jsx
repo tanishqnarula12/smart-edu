@@ -22,6 +22,7 @@ import {
   Callout,
 } from '../../components/ui/index.js';
 import { formatDate, formatRelative, humanise } from '../../utils/format.js';
+import { resolveFileUrl } from '../../utils/fileUrl.js';
 import { cn } from '../../utils/cn.js';
 
 /** Complaint triage (§39). */
@@ -270,7 +271,7 @@ export function AdminComplaints() {
 
             {active.attachmentUrl && (
               <a
-                href={active.attachmentUrl}
+                href={resolveFileUrl(active.attachmentUrl)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-block text-sm font-medium text-brand-600 hover:underline"

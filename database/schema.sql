@@ -393,6 +393,9 @@ CREATE TABLE IF NOT EXISTS assignments (
   due_date       TIMESTAMPTZ NOT NULL,
   max_marks      NUMERIC(6,2) NOT NULL DEFAULT 100 CHECK (max_marks > 0),
   attachment_url TEXT,
+  -- Structured question list, populated only when published from
+  -- AI-generated content — see migrations/002_add_assignment_questions.sql.
+  questions      JSONB,
   is_published   BOOLEAN NOT NULL DEFAULT TRUE,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
