@@ -142,11 +142,21 @@ export const marksQuerySchema = z.object({
 // Never carries an answer/explanation field; those stay out of student view.
 const assignmentQuestionSchema = z.object({
   number: z.coerce.number().optional(),
+  type: z.enum(['mcq', 'true_false', 'short_answer', 'long_answer']).optional(),
   question: z.string().max(2000),
   marks: z.coerce.number().optional(),
   options: z.array(z.string().max(500)).optional(),
   guidance: z.string().max(1000).optional(),
   section: z.string().max(200).optional(),
+});
+
+// Server-side only — the correct answer for each mcq/true_false question, so
+// a fully-objective quiz can be scored the instant it's submitted. Never
+// included in anything sent to a student.
+const assignmentAnswerKeyEntrySchema = z.object({
+  number: z.coerce.number(),
+  answer: z.string().max(500),
+  marks: z.coerce.number().optional(),
 });
 
 export const assignmentSchema = z.object({
@@ -159,6 +169,7 @@ export const assignmentSchema = z.object({
   maxMarks: z.coerce.number().positive().max(1000).default(100),
   attachmentUrl: z.string().max(500).optional().nullable(),
   questions: z.array(assignmentQuestionSchema).max(100).optional().nullable(),
+  answerKey: z.array(assignmentAnswerKeyEntrySchema).max(100).optional().nullable(),
   sourceKind: z.enum(['quiz', 'assignment', 'question_paper']).optional().nullable(),
   isPublished: z.boolean().optional().default(true),
 });
@@ -168,13 +179,29 @@ export const updateAssignmentSchema = assignmentSchema.partial().refine(
   'Provide at least one field to update'
 );
 
+// The submit endpoint is multipart (it also takes a file), so a structured
+// field like this one arrives as a JSON string, not a real object — parse it
+// here rather than pushing that detail into the controller.
+const selectedAnswersField = z.preprocess((value) => {
+  if (typeof value !== 'string' || !value) return undefined;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+}, z.record(z.string(), z.string().max(500)).optional());
+
 export const submitAssignmentSchema = z
   .object({
     content: z.string().max(20000).optional().nullable(),
     submissionUrl: z.string().max(500).optional().nullable(),
+    selectedAnswers: selectedAnswersField,
   })
   .refine(
-    (value) => Boolean(value.content?.trim()) || Boolean(value.submissionUrl),
+    (value) =>
+      Boolean(value.content?.trim()) ||
+      Boolean(value.submissionUrl) ||
+      Boolean(value.selectedAnswers && Object.keys(value.selectedAnswers).length),
     'Attach a file or write your answer before submitting'
   );
 

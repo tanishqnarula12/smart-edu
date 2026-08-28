@@ -44,23 +44,47 @@ import { formatRelative, humanise } from '../../utils/format.js';
 import { BLOOM_LEVELS, QUESTION_TYPES } from '../../utils/constants.js';
 import { cn } from '../../utils/cn.js';
 
+const OBJECTIVE_TYPES = new Set(['mcq', 'true_false']);
+
+/**
+ * The server-side-only answer key for whichever questions are objectively
+ * gradable (mcq / true_false) — lets a fully-objective quiz be scored the
+ * instant it's submitted instead of waiting on the teacher. Never sent to
+ * students; only the matching `questions` entries (built separately, with no
+ * `answer` field) reach the client that publishes to a class.
+ */
+function buildAnswerKey(questions) {
+  // Number is resolved against the *original* position before filtering, so
+  // it matches whatever `questions.map(...)` below assigns for the same
+  // question — otherwise a short-answer question ahead of an mcq would
+  // shift the index and the key would point at the wrong question.
+  const entries = questions
+    .map((question, index) => ({ ...question, number: question.number ?? index + 1 }))
+    .filter((question) => OBJECTIVE_TYPES.has(question.type) && question.answer != null)
+    .map((question) => ({ number: question.number, answer: question.answer, marks: question.marks }));
+  return entries.length ? entries : undefined;
+}
+
 /**
  * Turn generated content into an assignment a student can actually answer
  * one question at a time — a structured `questions` array (rendered as its
- * own box per question) plus a short `description`, rather than dumping
- * everything into one wall of text with a single answer box underneath.
- * Every mapper deliberately drops `answer`/`explanation` — publishing a
- * quiz or paper must never hand the class its own key.
+ * own box per question, radio buttons for mcq/true_false) plus a short
+ * `description`, rather than dumping everything into one wall of text with
+ * a single free-text box underneath. Every `questions` entry deliberately
+ * drops `answer`/`explanation` — publishing a quiz or paper must never hand
+ * the class its own key; that only goes into the separate `answerKey`.
  */
 function quizToAssignmentPrefill(quiz) {
   return {
     title: quiz.title,
     description: `${quiz.questionCount} questions · ${quiz.totalMarks} marks · ${humanise(quiz.difficulty)}`,
-    instructions: 'Answer each question in its own box below — no file upload needed.',
+    instructions: 'Answer each question below — multiple choice questions are graded the moment you submit.',
     maxMarks: quiz.totalMarks,
     sourceKind: 'quiz',
+    answerKey: buildAnswerKey(quiz.questions),
     questions: quiz.questions.map((question, index) => ({
       number: question.number ?? index + 1,
+      type: question.type,
       question: question.question,
       marks: question.marks,
       options: question.options,
@@ -93,21 +117,34 @@ function paperToPrefill(paper) {
     ? paper.instructions.map((instruction, i) => `${i + 1}. ${instruction}`).join('\n')
     : '';
 
-  return {
-    title: paper.title,
-    description: [`${paper.subject} · ${paper.totalMarks} marks`, header].filter(Boolean).join('\n\n'),
-    instructions: `Time allowed: ${Math.floor(paper.durationMinutes / 60)}h ${paper.durationMinutes % 60}m. Answer each question in its own box below.`,
-    maxMarks: paper.totalMarks,
-    sourceKind: 'question_paper',
-    questions: paper.sections.flatMap((section) =>
-      section.questions.map((question) => ({
-        number: question.number,
+  // Each section numbers its own questions 1, 2, 3… so "number" collides
+  // across sections (Section A Q1 and Section B Q1 both exist). Renumber
+  // globally here — the answer key matches by number, so a collision would
+  // silently grade the wrong question.
+  let counter = 0;
+  const questions = paper.sections.flatMap((section) =>
+    section.questions.map((question) => {
+      counter += 1;
+      return {
+        number: counter,
+        type: question.type,
         question: question.question,
         marks: question.marks,
         options: question.options,
+        answer: question.answer,
         section: section.name,
-      }))
-    ),
+      };
+    })
+  );
+
+  return {
+    title: paper.title,
+    description: [`${paper.subject} · ${paper.totalMarks} marks`, header].filter(Boolean).join('\n\n'),
+    instructions: `Time allowed: ${Math.floor(paper.durationMinutes / 60)}h ${paper.durationMinutes % 60}m. Multiple choice questions are graded the moment you submit.`,
+    maxMarks: paper.totalMarks,
+    sourceKind: 'question_paper',
+    answerKey: buildAnswerKey(questions),
+    questions: questions.map(({ answer: _answer, ...question }) => question),
   };
 }
 

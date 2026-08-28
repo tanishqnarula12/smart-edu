@@ -399,6 +399,10 @@ CREATE TABLE IF NOT EXISTS assignments (
   -- 'quiz' | 'assignment' | 'question_paper' | NULL (manually created) —
   -- see migrations/003_add_assignment_source_kind.sql.
   source_kind    VARCHAR(20),
+  -- Server-side-only answers for mcq/true_false questions, used to
+  -- auto-score a submission — never sent to students. See
+  -- migrations/004_add_assignment_answer_key.sql.
+  answer_key     JSONB,
   is_published   BOOLEAN NOT NULL DEFAULT TRUE,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -417,6 +421,9 @@ CREATE TABLE IF NOT EXISTS submissions (
   student_id     UUID NOT NULL REFERENCES users(id)       ON DELETE CASCADE,
   submission_url TEXT,
   content        TEXT,
+  -- What the student picked for each mcq/true_false question — used to
+  -- auto-grade, and kept for the teacher's reference either way.
+  selected_answers JSONB,
   submitted_at   TIMESTAMPTZ,
   marks          NUMERIC(6,2) CHECK (marks >= 0),
   feedback       TEXT,

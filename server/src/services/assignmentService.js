@@ -13,8 +13,8 @@ export async function createAssignment(data, teacherId) {
   return queryOne(
     `INSERT INTO assignments
        (title, description, instructions, subject_id, teacher_id, class_id,
-        due_date, max_marks, attachment_url, questions, source_kind, is_published)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        due_date, max_marks, attachment_url, questions, answer_key, source_kind, is_published)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
     [
       data.title,
@@ -27,6 +27,7 @@ export async function createAssignment(data, teacherId) {
       data.maxMarks,
       data.attachmentUrl ?? null,
       data.questions ? JSON.stringify(data.questions) : null,
+      data.answerKey ? JSON.stringify(data.answerKey) : null,
       data.sourceKind ?? null,
       data.isPublished ?? true,
     ]
@@ -57,6 +58,10 @@ export async function updateAssignment(assignmentId, data) {
   if (data.questions !== undefined) {
     params.push(data.questions ? JSON.stringify(data.questions) : null);
     updates.push(`questions = $${params.length}`);
+  }
+  if (data.answerKey !== undefined) {
+    params.push(data.answerKey ? JSON.stringify(data.answerKey) : null);
+    updates.push(`answer_key = $${params.length}`);
   }
   if (!updates.length) throw ApiError.badRequest('Provide at least one field to update');
 
@@ -142,6 +147,7 @@ export async function getStudentAssignments(
             t.name AS teacher_name,
             su.id AS submission_id, su.submitted_at, su.marks, su.feedback,
             su.submission_url, su.content AS submission_content,
+            (su.status = 'graded' AND su.graded_by IS NULL) AS is_auto_graded,
             ${derivedStatus} AS derived_status,
             (a.due_date < NOW()) AS is_overdue
        FROM assignments a
@@ -216,13 +222,40 @@ export async function getTeacherAssignments({
 }
 
 /**
+ * A quiz where *every* question is objectively gradable (mcq / true_false)
+ * can be scored the instant it's submitted, the way a real quiz app works —
+ * no waiting on the teacher. One with any short/long-answer question mixed
+ * in still needs a human, so it's left as a normal pending submission; the
+ * selected answers are still recorded either way.
+ */
+function autoGrade(questions, answerKey, selectedAnswers) {
+  if (!answerKey?.length || !questions?.length) return null;
+  if (answerKey.length !== questions.length) return null; // a subjective question is mixed in
+
+  let score = 0;
+  let correctCount = 0;
+  for (const entry of answerKey) {
+    const picked = selectedAnswers?.[String(entry.number)];
+    if (picked != null && picked === entry.answer) {
+      score += Number(entry.marks) || 0;
+      correctCount += 1;
+    }
+  }
+  return { score, correctCount, total: answerKey.length };
+}
+
+/**
  * Record a student's submission. Late submissions are flagged rather than
  * refused — the teacher decides what a late answer is worth.
  */
-export async function submitAssignment(assignmentId, studentId, { content, submissionUrl }) {
+export async function submitAssignment(
+  assignmentId,
+  studentId,
+  { content, submissionUrl, selectedAnswers }
+) {
   return withTransaction(async (tx) => {
     const { rows } = await tx.query(
-      `SELECT a.id, a.due_date, a.class_id, a.title, a.teacher_id,
+      `SELECT a.id, a.due_date, a.class_id, a.title, a.teacher_id, a.questions, a.answer_key,
               sp.class_id AS student_class_id
          FROM assignments a
          LEFT JOIN student_profiles sp ON sp.user_id = $2
@@ -245,22 +278,45 @@ export async function submitAssignment(assignmentId, studentId, { content, submi
     }
 
     const isLate = new Date(assignment.due_date) < new Date();
-    const status = isLate ? 'late' : 'submitted';
+    const result = autoGrade(assignment.questions, assignment.answer_key, selectedAnswers);
+
+    const status = result ? 'graded' : isLate ? 'late' : 'submitted';
+    const marks = result ? result.score : null;
+    const feedback = result
+      ? `Auto-graded — ${result.correctCount} of ${result.total} correct.`
+      : null;
+    const gradedAt = result ? new Date() : null;
 
     const { rows: saved } = await tx.query(
-      `INSERT INTO submissions (assignment_id, student_id, content, submission_url, submitted_at, status)
-       VALUES ($1, $2, $3, $4, NOW(), $5)
+      `INSERT INTO submissions
+         (assignment_id, student_id, content, submission_url, selected_answers,
+          submitted_at, status, marks, feedback, graded_at)
+       VALUES ($1, $2, $3, $4, $5, NOW(), $6, $7, $8, $9)
        ON CONFLICT (assignment_id, student_id)
-       DO UPDATE SET content        = EXCLUDED.content,
-                     submission_url = EXCLUDED.submission_url,
-                     submitted_at   = NOW(),
-                     status         = EXCLUDED.status,
-                     updated_at     = NOW()
+       DO UPDATE SET content          = EXCLUDED.content,
+                     submission_url   = EXCLUDED.submission_url,
+                     selected_answers = EXCLUDED.selected_answers,
+                     submitted_at     = NOW(),
+                     status           = EXCLUDED.status,
+                     marks            = EXCLUDED.marks,
+                     feedback         = EXCLUDED.feedback,
+                     graded_at        = EXCLUDED.graded_at,
+                     updated_at       = NOW()
        RETURNING *`,
-      [assignmentId, studentId, content ?? null, submissionUrl ?? null, status]
+      [
+        assignmentId,
+        studentId,
+        content ?? null,
+        submissionUrl ?? null,
+        selectedAnswers ? JSON.stringify(selectedAnswers) : null,
+        status,
+        marks,
+        feedback,
+        gradedAt,
+      ]
     );
 
-    return { submission: saved[0], assignment, isLate };
+    return { submission: saved[0], assignment, isLate, autoGraded: Boolean(result) };
   });
 }
 

@@ -48,6 +48,7 @@ export const listAssignments = asyncHandler(async (req, res) => {
         marks: row.marks,
         feedback: row.feedback,
         sourceKind: row.source_kind,
+        isAutoGraded: row.is_auto_graded,
       })),
       buildPaginationMeta({ page, limit }, total),
       'Assignments'
@@ -154,6 +155,7 @@ export const getAssignment = asyncHandler(async (req, res) => {
               submittedAt: own.submitted_at,
               marks: own.marks,
               feedback: own.feedback,
+              isAutoGraded: own.is_auto_graded,
             }
           : null,
       },
@@ -250,29 +252,40 @@ export const deleteAssignment = asyncHandler(async (req, res) => {
 /** POST /api/assignments/:id/submit — student only. */
 export const submitAssignment = asyncHandler(async (req, res) => {
   const submissionUrl = req.file ? fileUrl(req.file) : req.body.submissionUrl;
+  const hasSelectedAnswers = Boolean(
+    req.body.selectedAnswers && Object.keys(req.body.selectedAnswers).length
+  );
 
-  if (!submissionUrl && !req.body.content?.trim()) {
+  if (!submissionUrl && !req.body.content?.trim() && !hasSelectedAnswers) {
     throw ApiError.badRequest('Attach a file or write your answer before submitting');
   }
 
-  const { submission, assignment, isLate } = await assignmentService.submitAssignment(
+  const { submission, assignment, isLate, autoGraded } = await assignmentService.submitAssignment(
     req.params.id,
     req.user.id,
-    { content: req.body.content, submissionUrl }
+    { content: req.body.content, submissionUrl, selectedAnswers: req.body.selectedAnswers }
   );
 
-  await notify({
-    userId: assignment.teacher_id,
-    title: isLate ? 'Late submission received' : 'New submission',
-    message: `${req.user.name} submitted "${assignment.title}".`,
-    type: NOTIFICATION_TYPES.ASSIGNMENT,
-    link: `/teacher/assignments/${assignment.id}`,
-  });
+  // An auto-graded quiz has nothing left for the teacher to do — spare them
+  // a "please grade this" notification for every student's attempt.
+  if (!autoGraded) {
+    await notify({
+      userId: assignment.teacher_id,
+      title: isLate ? 'Late submission received' : 'New submission',
+      message: `${req.user.name} submitted "${assignment.title}".`,
+      type: NOTIFICATION_TYPES.ASSIGNMENT,
+      link: `/teacher/assignments/${assignment.id}`,
+    });
+  }
 
   return sendSuccess(
     res,
     submission,
-    isLate ? 'Submitted after the deadline — your teacher will see it flagged as late' : 'Assignment submitted'
+    autoGraded
+      ? 'Submitted and graded'
+      : isLate
+        ? 'Submitted after the deadline — your teacher will see it flagged as late'
+        : 'Assignment submitted'
   );
 });
 

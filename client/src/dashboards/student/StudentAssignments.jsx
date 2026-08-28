@@ -221,21 +221,27 @@ export function StudentAssignmentDetail() {
 
   const [content, setContent] = useState('');
   const [answers, setAnswers] = useState({});
+  const [selectedAnswers, setSelectedAnswers] = useState({});
   const [file, setFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data, isLoading, error, refetch } = useApi(() => assignmentApi.get(id), [id]);
 
   const hasQuestions = Boolean(data?.questions?.length);
+  const isObjective = (question) =>
+    ['mcq', 'true_false'].includes(question.type) && question.options?.length > 0;
+  const isFullyObjective = hasQuestions && data.questions.every(isObjective);
+  const freeTextQuestions = hasQuestions ? data.questions.filter((q) => !isObjective(q)) : [];
 
-  // A structured assignment gets one answer box per question on screen, but
-  // still lands in the same single `content` field the grading view already
-  // reads — no schema change needed on the submission side for this.
+  // A structured assignment gets one answer box per question on screen.
+  // Multiple-choice answers go to the server separately (for auto-grading);
+  // everything else is still concatenated into the one `content` field the
+  // grading view already reads — no schema change needed for free text.
   const buildQuestionAnswerContent = () =>
-    data.questions
-      .map((question, index) => {
-        const answer = (answers[question.number ?? index] ?? '').trim();
-        return `Q${question.number ?? index + 1}. ${question.question}\nAnswer: ${answer || '(no answer provided)'}`;
+    freeTextQuestions
+      .map((question) => {
+        const answer = (answers[question.number] ?? '').trim();
+        return `Q${question.number}. ${question.question}\nAnswer: ${answer || '(no answer provided)'}`;
       })
       .join('\n\n');
 
@@ -243,9 +249,9 @@ export function StudentAssignmentDetail() {
     event.preventDefault();
 
     if (hasQuestions) {
-      const answered = data.questions.some((question, index) =>
-        (answers[question.number ?? index] ?? '').trim()
-      );
+      const answered =
+        Object.values(selectedAnswers).some(Boolean) ||
+        freeTextQuestions.some((question) => (answers[question.number] ?? '').trim());
       if (!answered && !file) {
         toast.error('Answer at least one question or attach a file before submitting');
         return;
@@ -261,12 +267,16 @@ export function StudentAssignmentDetail() {
 
       const payload = new FormData();
       if (combinedContent) payload.append('content', combinedContent);
+      if (Object.keys(selectedAnswers).length) {
+        payload.append('selectedAnswers', JSON.stringify(selectedAnswers));
+      }
       if (file) payload.append('file', file);
 
       await assignmentApi.submit(id, payload);
-      toast.success('Assignment submitted');
+      toast.success(isFullyObjective ? 'Submitted and graded' : 'Assignment submitted');
       setContent('');
       setAnswers({});
+      setSelectedAnswers({});
       setFile(null);
       refetch();
     } catch (submitError) {
@@ -377,7 +387,7 @@ export function StudentAssignmentDetail() {
                   <div className="rounded-xl border border-success-500/25 bg-success-50 p-4 dark:bg-success-500/10">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="text-sm font-semibold text-success-800 dark:text-success-500">
-                        Graded
+                        {data.submission.isAutoGraded ? 'Your score' : 'Graded'}
                       </p>
                       <p className="text-lg font-bold tabular-nums text-success-800 dark:text-success-500">
                         {data.submission.marks} / {data.maxMarks}
@@ -393,7 +403,7 @@ export function StudentAssignmentDetail() {
                     {data.submission.feedback && (
                       <div className="mt-3 border-t border-success-500/20 pt-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-success-700 dark:text-success-500">
-                          Teacher feedback
+                          {data.submission.isAutoGraded ? 'Result' : 'Teacher feedback'}
                         </p>
                         <p className="mt-1 text-sm leading-relaxed text-success-900 dark:text-success-100">
                           {data.submission.feedback}
@@ -414,9 +424,11 @@ export function StudentAssignmentDetail() {
                 subtitle={
                   hasSubmission
                     ? 'Submitting again replaces your previous answer.'
-                    : hasQuestions
-                      ? 'Answer each question in its own box below.'
-                      : 'Write your answer, attach a file, or both.'
+                    : isFullyObjective
+                      ? "Pick an answer for each question — you'll get your score the moment you submit."
+                      : hasQuestions
+                        ? 'Answer each question in its own box below.'
+                        : 'Write your answer, attach a file, or both.'
                 }
                 icon={Upload}
               />
@@ -425,7 +437,10 @@ export function StudentAssignmentDetail() {
                 {hasQuestions ? (
                   <div className="space-y-3">
                     {data.questions.map((question, index) => {
-                      const key = question.number ?? index;
+                      // Matches the 1-based fallback the generators and the
+                      // publish step use — the auto-grading answer key is
+                      // matched by this same number, so it must agree.
+                      const key = question.number ?? index + 1;
                       const showSectionHeading =
                         question.section && question.section !== data.questions[index - 1]?.section;
 
@@ -454,25 +469,45 @@ export function StudentAssignmentDetail() {
                               </p>
                             )}
 
-                            {question.options?.length > 0 && (
-                              <ul className="mt-2 space-y-1">
-                                {question.options.map((option, optionIndex) => (
-                                  <li key={optionIndex} className="text-xs text-ink-muted">
-                                    {String.fromCharCode(65 + optionIndex)}. {option}
-                                  </li>
-                                ))}
-                              </ul>
+                            {isObjective(question) ? (
+                              <div className="mt-3 space-y-2" role="radiogroup" aria-label={`Answer for question ${key}`}>
+                                {question.options.map((option, optionIndex) => {
+                                  const isSelected = selectedAnswers[key] === option;
+                                  return (
+                                    <label
+                                      key={optionIndex}
+                                      className={cn(
+                                        'flex cursor-pointer items-center gap-2.5 rounded-lg border p-2.5 text-sm transition',
+                                        isSelected
+                                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40'
+                                          : 'border-line hover:bg-surface-sunken'
+                                      )}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name={`question-${key}`}
+                                        checked={isSelected}
+                                        onChange={() =>
+                                          setSelectedAnswers((current) => ({ ...current, [key]: option }))
+                                        }
+                                        className="h-4 w-4 accent-brand-600"
+                                      />
+                                      <span className="text-ink">{option}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <Textarea
+                                className="mt-3"
+                                value={answers[key] ?? ''}
+                                onChange={(event) =>
+                                  setAnswers((current) => ({ ...current, [key]: event.target.value }))
+                                }
+                                placeholder="Type your answer…"
+                                rows={3}
+                              />
                             )}
-
-                            <Textarea
-                              className="mt-3"
-                              value={answers[key] ?? ''}
-                              onChange={(event) =>
-                                setAnswers((current) => ({ ...current, [key]: event.target.value }))
-                              }
-                              placeholder="Type your answer…"
-                              rows={3}
-                            />
                           </div>
                         </div>
                       );
@@ -489,31 +524,38 @@ export function StudentAssignmentDetail() {
                   />
                 )}
 
-                <div>
-                  <label
-                    htmlFor="submission-file"
-                    className="mb-1.5 block text-sm font-medium text-ink"
-                  >
-                    Attach a file
-                  </label>
-                  <input
-                    id="submission-file"
-                    type="file"
-                    onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                    className="block w-full cursor-pointer rounded-xl border border-line bg-surface-raised text-sm text-ink-muted file:mr-3 file:cursor-pointer file:rounded-l-xl file:border-0 file:bg-surface-sunken file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-ink hover:file:bg-line/50"
-                  />
-                  <p className="mt-1.5 text-xs text-ink-muted">
-                    PDF, Word, images, spreadsheets or a zip. Up to 10MB.
-                  </p>
-                </div>
+                {!isFullyObjective && (
+                  <div>
+                    <label
+                      htmlFor="submission-file"
+                      className="mb-1.5 block text-sm font-medium text-ink"
+                    >
+                      Attach a file
+                    </label>
+                    <input
+                      id="submission-file"
+                      type="file"
+                      onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                      className="block w-full cursor-pointer rounded-xl border border-line bg-surface-raised text-sm text-ink-muted file:mr-3 file:cursor-pointer file:rounded-l-xl file:border-0 file:bg-surface-sunken file:px-4 file:py-2.5 file:text-sm file:font-medium file:text-ink hover:file:bg-line/50"
+                    />
+                    <p className="mt-1.5 text-xs text-ink-muted">
+                      PDF, Word, images, spreadsheets or a zip. Up to 10MB.
+                    </p>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
                   icon={Upload}
                   isLoading={isSubmitting}
-                  disabled={!content.trim() && !file}
+                  disabled={
+                    !content.trim() &&
+                    !file &&
+                    !Object.values(selectedAnswers).some(Boolean) &&
+                    !Object.values(answers).some((value) => value?.trim())
+                  }
                 >
-                  {hasSubmission ? 'Replace submission' : 'Submit assignment'}
+                  {hasSubmission ? 'Replace submission' : isFullyObjective ? 'Submit and see score' : 'Submit assignment'}
                 </Button>
               </form>
             </Card>

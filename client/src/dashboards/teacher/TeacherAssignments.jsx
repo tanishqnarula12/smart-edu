@@ -297,6 +297,7 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
   // tracks inputs a user types into, not JSON handed over from a generator.
   const [questions, setQuestions] = useState(null);
   const [sourceKind, setSourceKind] = useState(null);
+  const [answerKey, setAnswerKey] = useState(null);
 
   const { data: assignments } = useApi(() => teacherApi.myClasses(), []);
 
@@ -335,6 +336,7 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
     if (prefill.maxMarks) setValue('maxMarks', prefill.maxMarks);
     setQuestions(prefill.questions ?? null);
     setSourceKind(prefill.sourceKind ?? null);
+    setAnswerKey(prefill.answerKey ?? null);
   }, [prefill, setValue]);
 
   const submit = async (values) => {
@@ -344,12 +346,14 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
         classId,
         questions,
         sourceKind,
+        answerKey,
         dueDate: new Date(values.dueDate).toISOString(),
       });
       toast.success('Assignment created and published to the class');
       reset({ maxMarks: 20, isPublished: true });
       setQuestions(null);
       setSourceKind(null);
+      setAnswerKey(null);
       onCreated();
     } catch (error) {
       toast.error(error.message);
@@ -427,6 +431,11 @@ function CreateAssignmentModal({ isOpen, onClose, onCreated, prefill }) {
           <Callout tone="info">
             {questions.length} question{questions.length === 1 ? '' : 's'} will be attached, each as
             its own answer box for students.
+            {answerKey?.length === questions.length
+              ? ' Every question is multiple choice — it will be scored automatically the moment a student submits.'
+              : answerKey?.length > 0
+                ? ` ${answerKey.length} of them are multiple choice; the rest need your grading as usual.`
+                : ''}
           </Callout>
         )}
 
