@@ -311,7 +311,7 @@ export async function listDocuments(user, { subjectId = null, classId = null } =
 
   return queryMany(
     `SELECT d.id, d.title, d.description, d.source_type, d.file_url, d.visibility,
-            d.is_indexed, d.created_at,
+            d.is_indexed, d.created_at, d.uploaded_by,
             s.name AS subject_name, c.name AS class_name, c.section,
             u.name AS uploaded_by_name,
             (SELECT COUNT(*) FROM document_chunks dc WHERE dc.document_id = d.id)::int AS chunk_count

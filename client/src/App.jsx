@@ -138,6 +138,9 @@ const TeacherLibrary = lazy(() =>
 const TeacherMeetings = lazy(() =>
   import('./dashboards/teacher/TeacherMeetings.jsx').then((m) => ({ default: m.TeacherMeetings }))
 );
+const TeacherDocuments = lazy(() =>
+  import('./dashboards/teacher/TeacherDocuments.jsx').then((m) => ({ default: m.TeacherDocuments }))
+);
 
 // Admin
 const AdminDashboard = lazy(() =>
@@ -316,6 +319,7 @@ export function App() {
                       <Route path="notices" element={<NoticesManager />} />
                       <Route path="leave" element={<LeaveManager />} />
                       <Route path="ai-tools" element={<TeacherAITools />} />
+                      <Route path="documents" element={<TeacherDocuments />} />
                       <Route path="notifications" element={<Notifications />} />
                       <Route path="profile" element={<Profile />} />
                     </Route>

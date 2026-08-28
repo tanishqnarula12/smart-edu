@@ -3,7 +3,7 @@ import {
   FileText, TrendingUp, Sparkles, BookOpenCheck, MessageSquareWarning, PlaneTakeoff,
   Bell, ShieldCheck, User, Users, UserCog, School, BookMarked, Building2,
   Wallet, BarChart3, Settings, ScrollText, KeyRound, FileSpreadsheet, HeartHandshake,
-  ClipboardCheck, FlaskConical, Baby, Archive,
+  ClipboardCheck, FlaskConical, Baby, Archive, Library,
 } from 'lucide-react';
 
 /**
@@ -66,6 +66,7 @@ export const NAVIGATION = {
     { to: '/teacher/meetings', label: 'Meetings', icon: HeartHandshake },
     { to: '/teacher/notices', label: 'Notices', icon: FileText },
     { to: '/teacher/ai-tools', label: 'AI Tools', icon: Sparkles, highlight: true, primary: true },
+    { to: '/teacher/documents', label: 'Study Materials', icon: Library },
     { to: '/teacher/notifications', label: 'Notifications', icon: Bell },
     { to: '/teacher/profile', label: 'Profile', icon: User },
   ],

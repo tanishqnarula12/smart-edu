@@ -7,6 +7,7 @@ import {
   Phone,
   X,
   Clock,
+  CalendarClock,
 } from 'lucide-react';
 import { ptmApi, parentApi } from '../../services/endpoints.js';
 import { useApi } from '../../hooks/useApi.js';
@@ -41,6 +42,7 @@ export function ParentPTM() {
   const [agenda, setAgenda] = useState('');
   const [isBooking, setBooking] = useState(false);
   const [toCancel, setToCancel] = useState(null);
+  const [rescheduling, setRescheduling] = useState(null); // booking
 
   const { data: children } = useApi(() => parentApi.children(), []);
   const { data: slots, isLoading: slotsLoading, error: slotsError, refetch: refetchSlots } = useApi(
@@ -206,7 +208,12 @@ export function ParentPTM() {
               ) : (
                 <ul className="space-y-3">
                   {upcoming.map((booking) => (
-                    <MeetingRow key={booking.id} booking={booking} onCancel={() => setToCancel(booking)} />
+                    <MeetingRow
+                      key={booking.id}
+                      booking={booking}
+                      onCancel={() => setToCancel(booking)}
+                      onReschedule={() => setRescheduling(booking)}
+                    />
                   ))}
                 </ul>
               )}
@@ -278,11 +285,21 @@ export function ParentPTM() {
         message="The slot will be released for other parents to book."
         confirmLabel="Cancel meeting"
       />
+
+      <RescheduleModal
+        booking={rescheduling}
+        slots={slots}
+        onClose={() => setRescheduling(null)}
+        onDone={() => {
+          refetchSlots();
+          refetchBookings();
+        }}
+      />
     </>
   );
 }
 
-function MeetingRow({ booking, onCancel, isPast = false }) {
+function MeetingRow({ booking, onCancel, onReschedule, isPast = false }) {
   const ModeIcon = { online: Video, in_person: MapPin, phone: Phone }[booking.mode] ?? MapPin;
 
   return (
@@ -323,12 +340,112 @@ function MeetingRow({ booking, onCancel, isPast = false }) {
         )}
       </div>
 
-      {!isPast && onCancel && booking.status !== 'cancelled' && (
-        <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>
-          Cancel
-        </Button>
+      {!isPast && booking.status !== 'cancelled' && (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {onReschedule && (
+            <Button variant="secondary" size="xs" icon={CalendarClock} onClick={onReschedule}>
+              Reschedule
+            </Button>
+          )}
+          {onCancel && (
+            <Button variant="ghost" size="xs" icon={X} onClick={onCancel}>
+              Cancel
+            </Button>
+          )}
+        </div>
       )}
     </li>
+  );
+}
+
+/** Move a booking to a different open slot with the same teacher. */
+function RescheduleModal({ booking, slots, onClose, onDone }) {
+  const toast = useToast();
+  const [slotId, setSlotId] = useState('');
+  const [isSaving, setSaving] = useState(false);
+
+  const openSlots = (slots ?? []).filter(
+    (slot) => slot.teacherId === booking?.teacherId && !slot.isBooked
+  );
+  const ModeIcons = { online: Video, in_person: MapPin, phone: Phone };
+
+  const submit = async () => {
+    if (!slotId) {
+      toast.error('Pick a new time first');
+      return;
+    }
+    setSaving(true);
+    try {
+      await ptmApi.updateBooking(booking.id, { status: 'rescheduled', slotId });
+      toast.success('Meeting rescheduled — the teacher will confirm the new time');
+      setSlotId('');
+      onDone();
+      onClose();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={Boolean(booking)}
+      onClose={onClose}
+      title="Reschedule this meeting"
+      description={booking ? `${booking.teacherName} · about ${booking.studentName}` : ''}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Back
+          </Button>
+          <Button onClick={submit} isLoading={isSaving} disabled={!slotId}>
+            Reschedule
+          </Button>
+        </>
+      }
+    >
+      {openSlots.length === 0 ? (
+        <EmptyState
+          icon={CalendarClock}
+          title="No other open slots"
+          message="This teacher has no other availability published right now — try again later."
+          compact
+        />
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {openSlots.map((slot) => {
+            const ModeIcon = ModeIcons[slot.mode] ?? MapPin;
+            const isSelected = slotId === slot.id;
+            return (
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => setSlotId(slot.id)}
+                className={cn(
+                  'rounded-xl border px-3.5 py-2.5 text-left transition',
+                  isSelected
+                    ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40'
+                    : 'border-line hover:border-brand-300 hover:bg-surface-sunken'
+                )}
+              >
+                <span className="block text-xs font-semibold text-ink">
+                  {formatDate(slot.date, { day: 'numeric', month: 'short', weekday: 'short' })}
+                </span>
+                <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
+                  <Clock size={10} aria-hidden="true" />
+                  {formatTime(slot.startTime)} – {formatTime(slot.endTime)}
+                </span>
+                <span className="mt-1 flex items-center gap-1 text-[10px] text-ink-subtle">
+                  <ModeIcon size={9} aria-hidden="true" />
+                  {slot.mode === 'in_person' ? (slot.location ?? 'In person') : slot.mode}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </Modal>
   );
 }
 
