@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle, Info } from 'lucide-react';
 import { AuthLayout } from './AuthLayout.jsx';
 import { useAuth, resolvePostLoginPath } from '../context/AuthContext.jsx';
-import { Button, Input, PasswordInput, Checkbox } from '../components/ui/index.js';
+import { Button, Input, PasswordInput, Checkbox, Callout } from '../components/ui/index.js';
 
 /** Sign-in (§4). Redirects by role, or back to wherever the user was headed. */
 export function Login() {
@@ -13,10 +13,12 @@ export function Login() {
   const location = useLocation();
 
   const [serverError, setServerError] = useState(null);
+  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({ defaultValues: { email: '', password: '', rememberMe: true } });
 
@@ -29,6 +31,14 @@ export function Login() {
     } catch (error) {
       setServerError(error.message);
     }
+  };
+
+  // Not named `use…` — that prefix is reserved for hooks and this is a plain
+  // click handler.
+  const fillDemoAccount = (email) => {
+    setValue('email', email);
+    setValue('password', 'Demo@12345');
+    setShowDemoAccounts(false);
   };
 
   return (
@@ -92,6 +102,47 @@ export function Login() {
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
+
+      {/* Demo credentials — clearly labelled, never presented as real accounts (§52). */}
+      <div className="mt-8">
+        <button
+          type="button"
+          onClick={() => setShowDemoAccounts((current) => !current)}
+          className="flex w-full items-center justify-center gap-1.5 text-xs font-medium text-ink-muted transition hover:text-ink"
+        >
+          <Info size={13} aria-hidden="true" />
+          {showDemoAccounts ? 'Hide demo accounts' : 'Use a demo account'}
+        </button>
+
+        {showDemoAccounts && (
+          <Callout tone="neutral" className="mt-3 animate-fade-up">
+            <p className="mb-2.5 text-xs">
+              Seeded demo accounts. Password:{' '}
+              <code className="rounded bg-surface-raised px-1 py-0.5 font-mono text-[11px]">
+                Demo@12345
+              </code>
+            </p>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {[
+                { role: 'Admin', email: 'admin@smartedu.demo' },
+                { role: 'Teacher', email: 'teacher@smartedu.demo' },
+                { role: 'Student', email: 'student@smartedu.demo' },
+                { role: 'Parent', email: 'parent@smartedu.demo' },
+              ].map((account) => (
+                <button
+                  key={account.email}
+                  type="button"
+                  onClick={() => fillDemoAccount(account.email)}
+                  className="rounded-lg border border-line bg-surface-raised px-2.5 py-2 text-left text-xs transition hover:border-brand-300 hover:bg-brand-50 dark:hover:bg-brand-950/30"
+                >
+                  <span className="block font-semibold text-ink">{account.role}</span>
+                  <span className="block truncate text-ink-muted">{account.email}</span>
+                </button>
+              ))}
+            </div>
+          </Callout>
+        )}
+      </div>
     </AuthLayout>
   );
 }
