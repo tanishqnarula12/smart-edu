@@ -1,31 +1,52 @@
-# Smart Edu
+<p align="center">
+  <strong>SMART EDU</strong><br>
+  <strong>Smarter management. Better insights. Personalised education.</strong><br>
+  One academic record connecting students, parents, teachers and administrators.
+</p>
 
-> **Smarter management. Better insights. Personalised education.**
+<p align="center">
+  <a href="https://github.com/tanishqnarula12/smart-edu/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/tanishqnarula12/smart-edu?style=flat&color=8b9cff&label=stars"></a>
+  <a href="https://github.com/tanishqnarula12/smart-edu/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/tanishqnarula12/smart-edu?style=flat&color=76dfcb"></a>
+  <img alt="React 18" src="https://img.shields.io/badge/React-18-149eca?style=flat&logo=react&logoColor=white">
+  <img alt="Express 4" src="https://img.shields.io/badge/Express-4-333333?style=flat&logo=express&logoColor=white">
+  <img alt="PostgreSQL 13+" src="https://img.shields.io/badge/PostgreSQL-13%2B-4169e1?style=flat&logo=postgresql&logoColor=white">
+</p>
 
-Smart Edu brings students, parents, teachers and administrators together around
-one academic record. Role-based dashboards, workflow tools and AI assistance
-help each person act on the information they are allowed to see.
+<p align="center">
+  <a href="#8-installation">Get started</a> ·
+  <a href="#2-features">Features</a> ·
+  <a href="#3-architecture">Architecture</a> ·
+  <a href="docs/API.md">API reference</a> ·
+  <a href="docs/DEPLOYMENT.md">Deployment</a>
+</p>
 
-The platform is a full-stack application built with React, Express and
-PostgreSQL. Authentication, authorization and analytics run through the API and
-database, so the same access rules apply across dashboards and AI features.
+---
 
-### At a glance
+## The idea
 
-- **Four role-specific experiences:** student, parent, teacher and administrator.
-- **Academic workflows:** attendance, assessments, assignments, timetables, fees,
-  complaints, leave and parent-teacher meetings.
-- **Privacy by design:** students manage what each parent can see, and access is
-  checked on the server before data is used by an AI feature.
-- **Full-stack foundation:** React 18, Express 4, PostgreSQL 13+, JWT
-  authentication, Zod validation and Vitest/Supertest coverage.
-- **Local demo mode:** seeded sample accounts and a mock AI provider let you
-  explore the app without configuring an AI API key.
+Academic data is useful when it reaches the right people in time. Smart Edu
+brings attendance, assessments, assignments and school operations into one
+system, then turns that shared record into role-specific dashboards and actions.
 
-**Start here:** [Installation](#8-installation) ·
-[Environment variables](#7-environment-variables) ·
-[API reference](docs/API.md) ·
-[Deployment guide](docs/DEPLOYMENT.md)
+The access model is part of the product: students choose what each parent can
+see, and the server applies those permissions before returning data or passing
+context to an AI feature.
+
+## What it does
+
+|  |  |
+|---|---|
+| **Student and parent portals**<br>Track attendance, marks, assignments and progress, with student-controlled parent sharing. | **Teacher workspace**<br>Manage attendance, assessments, assignments, feedback, class health and AI-assisted learning materials. |
+| **Administration tools**<br>Manage people, classes, subjects, timetables, fees, complaints, permissions and audit records. | **One connected academic record**<br>Dashboards and reports use the same PostgreSQL data and server-side access rules. |
+
+See the detailed [feature list](#2-features), [architecture](#3-architecture) and
+[API reference](docs/API.md).
+
+**Quick start:** install Node.js 18+ and PostgreSQL 13+, then follow the
+[installation steps](#8-installation). The demo seed provides sample accounts,
+and the mock AI provider works without an external API key. For database setup
+and deployment options, see the [PostgreSQL guide](#6-postgresql-setup) and
+[deployment guide](docs/DEPLOYMENT.md).
 
 ---
 
