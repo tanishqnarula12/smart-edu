@@ -1,14 +1,31 @@
-  # Smart Edu
+# Smart Edu
 
-**Smarter management. Better insights. Personalised education.**
+> **Smarter management. Better insights. Personalised education.**
 
-An AI-powered school and college management platform that connects students,
-parents, teachers and administrators around one academic record — with an AI
-assistant per role that respects exactly who is permitted to see what.
+Smart Edu brings students, parents, teachers and administrators together around
+one academic record. Role-based dashboards, workflow tools and AI assistance
+help each person act on the information they are allowed to see.
 
-This is a full-stack application, not a UI prototype: React frontend, Express
-API, PostgreSQL database, JWT authentication, role-based authorization and live
-analytics computed from real data.
+The platform is a full-stack application built with React, Express and
+PostgreSQL. Authentication, authorization and analytics run through the API and
+database, so the same access rules apply across dashboards and AI features.
+
+### At a glance
+
+- **Four role-specific experiences:** student, parent, teacher and administrator.
+- **Academic workflows:** attendance, assessments, assignments, timetables, fees,
+  complaints, leave and parent-teacher meetings.
+- **Privacy by design:** students manage what each parent can see, and access is
+  checked on the server before data is used by an AI feature.
+- **Full-stack foundation:** React 18, Express 4, PostgreSQL 13+, JWT
+  authentication, Zod validation and Vitest/Supertest coverage.
+- **Local demo mode:** seeded sample accounts and a mock AI provider let you
+  explore the app without configuring an AI API key.
+
+**Start here:** [Installation](#8-installation) ·
+[Environment variables](#7-environment-variables) ·
+[API reference](docs/API.md) ·
+[Deployment guide](docs/DEPLOYMENT.md)
 
 ---
 
