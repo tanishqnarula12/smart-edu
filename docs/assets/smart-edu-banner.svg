@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" fill="none">
+  <title>Smart Edu — Smarter management. Better insights. Personalised education.</title>
+  <desc>A glowing open book connected to students, parents, teachers and administrators.</desc>
+  <defs>
+    <linearGradient id="bg" x1="40" y1="20" x2="1150" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101B36"/><stop offset=".56" stop-color="#171A35"/><stop offset="1" stop-color="#301A46"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="865" y1="72" x2="1088" y2="258" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#86F7E5"/><stop offset=".48" stop-color="#8A9CFF"/><stop offset="1" stop-color="#D895FF"/>
+    </linearGradient>
+    <linearGradient id="page" x1="927" y1="144" x2="1030" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E7FFFC" stop-opacity=".96"/><stop offset="1" stop-color="#9DB0FF" stop-opacity=".82"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(170 0 0 142 990 160)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8A9CFF" stop-opacity=".38"/><stop offset="1" stop-color="#8A9CFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="837" y="13" width="310" height="294" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="24"/>
+    </filter>
+    <filter id="bookGlow" x="894" y="91" width="202" height="156" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="320" rx="28" fill="url(#bg)"/>
+  <path d="M0 256c188-40 309-31 462 9 153 40 260 19 403-24s224-51 335-12v91H0v-64Z" fill="#0B1328" fill-opacity=".58"/>
+  <path d="M0 274c188-33 300-23 447 11 166 39 287 18 422-17 135-35 226-41 331-13" stroke="#5C719D" stroke-opacity=".16"/>
+
+  <circle cx="992" cy="160" r="120" fill="url(#glow)" filter="url(#softGlow)"/>
+  <circle cx="992" cy="160" r="93" stroke="url(#accent)" stroke-opacity=".28" stroke-width="1" stroke-dasharray="2 9"/>
+  <ellipse cx="992" cy="160" rx="134" ry="57" transform="rotate(-25 992 160)" stroke="url(#accent)" stroke-opacity=".48" stroke-width="1.2" stroke-dasharray="70 24 18 30"/>
+
+  <!-- Connected learning community -->
+  <path d="M937 133 876 99M1047 133l53-33M1053 202l59 31M933 207l-62 28" stroke="url(#accent)" stroke-opacity=".45" stroke-width="1.5"/>
+  <circle cx="875" cy="98" r="18" fill="#192744" stroke="#86F7E5" stroke-opacity=".75"/>
+  <circle cx="1101" cy="99" r="18" fill="#202342" stroke="#A6B0FF" stroke-opacity=".75"/>
+  <circle cx="1115" cy="233" r="18" fill="#2A2145" stroke="#D895FF" stroke-opacity=".75"/>
+  <circle cx="869" cy="237" r="18" fill="#192744" stroke="#86F7E5" stroke-opacity=".75"/>
+  <path d="M868 99a7 7 0 1 1 14 0 7 7 0 0 1-14 0Zm-3 10c1-5 4-7 10-7s9 2 10 7" stroke="#C9FFF6" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1094 100h14m-12-5h10m-12 10h14" stroke="#D7DCFF" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1108 236h14m-12-5h10m-12 10h14" stroke="#F0D8FF" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M862 231h14v11h-14zM862 235h14m-7-4v11" stroke="#C9FFF6" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Open book -->
+  <ellipse cx="991" cy="170" rx="83" ry="57" fill="#8A9CFF" fill-opacity=".45" filter="url(#bookGlow)"/>
+  <path d="M991 151c-19-17-43-20-67-13v57c26-7 49-3 67 14V151Z" fill="url(#page)" fill-opacity=".92" stroke="#D7FFF9" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M991 151c19-17 43-20 67-13v57c-26-7-49-3-67 14V151Z" fill="#C7CBFF" fill-opacity=".82" stroke="#E7DEFF" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M991 151v58M936 151c16-3 31-1 43 6m-43 7c16-3 31-1 43 6m-43 7c13-2 25-1 36 3m74-22c-16-3-31-1-43 6m43 7c-16-3-31-1-43 6m43 7c-13-2-25-1-36 3" stroke="#6473B2" stroke-opacity=".56" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M991 133v-14m-9 2 9 12 9-12" stroke="#A6FFF1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="991" cy="112" r="3" fill="#A6FFF1"/>
+
+  <circle cx="900" cy="150" r="3" fill="#86F7E5" fill-opacity=".9"/>
+  <circle cx="1081" cy="175" r="3.5" fill="#D895FF" fill-opacity=".95"/>
+  <circle cx="1061" cy="72" r="2.5" fill="#86F7E5" fill-opacity=".9"/>
+  <circle cx="917" cy="257" r="2.5" fill="#A6B0FF" fill-opacity=".9"/>
+
+  <text x="76" y="83" fill="#A6F7E8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" letter-spacing="3.2">LEARN · TEACH · CONNECT · GROW</text>
+  <text x="72" y="174" fill="#F6F8FF" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="64" font-weight="760" letter-spacing="-2.8">SMART EDU</text>
+  <text x="78" y="214" fill="#C7D0EA" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="19">Smarter management. Better insights. Personalised education.</text>
+  <rect x="78" y="245" width="148" height="1" fill="#536385"/>
+  <text x="78" y="273" fill="#9AA8C8" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="12" letter-spacing="1.1">ONE RECORD. EVERY ROLE. CLEARER ACTION.</text>
+</svg>
