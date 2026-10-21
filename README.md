@@ -1,14 +1,52 @@
-  # Smart Edu
+<p align="center">
+  <strong>SMART EDU</strong><br>
+  <strong>Smarter management. Better insights. Personalised education.</strong><br>
+  One academic record connecting students, parents, teachers and administrators.
+</p>
 
-**Smarter management. Better insights. Personalised education.**
+<p align="center">
+  <a href="https://github.com/tanishqnarula12/smart-edu/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/tanishqnarula12/smart-edu?style=flat&color=8b9cff&label=stars"></a>
+  <a href="https://github.com/tanishqnarula12/smart-edu/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/tanishqnarula12/smart-edu?style=flat&color=76dfcb"></a>
+  <img alt="React 18" src="https://img.shields.io/badge/React-18-149eca?style=flat&logo=react&logoColor=white">
+  <img alt="Express 4" src="https://img.shields.io/badge/Express-4-333333?style=flat&logo=express&logoColor=white">
+  <img alt="PostgreSQL 13+" src="https://img.shields.io/badge/PostgreSQL-13%2B-4169e1?style=flat&logo=postgresql&logoColor=white">
+</p>
 
-An AI-powered school and college management platform that connects students,
-parents, teachers and administrators around one academic record — with an AI
-assistant per role that respects exactly who is permitted to see what.
+<p align="center">
+  <a href="#8-installation">Get started</a> ·
+  <a href="#2-features">Features</a> ·
+  <a href="#3-architecture">Architecture</a> ·
+  <a href="docs/API.md">API reference</a> ·
+  <a href="docs/DEPLOYMENT.md">Deployment</a>
+</p>
 
-This is a full-stack application, not a UI prototype: React frontend, Express
-API, PostgreSQL database, JWT authentication, role-based authorization and live
-analytics computed from real data.
+---
+
+## The idea
+
+Academic data is useful when it reaches the right people in time. Smart Edu
+brings attendance, assessments, assignments and school operations into one
+system, then turns that shared record into role-specific dashboards and actions.
+
+The access model is part of the product: students choose what each parent can
+see, and the server applies those permissions before returning data or passing
+context to an AI feature.
+
+## What it does
+
+|  |  |
+|---|---|
+| **Student and parent portals**<br>Track attendance, marks, assignments and progress, with student-controlled parent sharing. | **Teacher workspace**<br>Manage attendance, assessments, assignments, feedback, class health and AI-assisted learning materials. |
+| **Administration tools**<br>Manage people, classes, subjects, timetables, fees, complaints, permissions and audit records. | **One connected academic record**<br>Dashboards and reports use the same PostgreSQL data and server-side access rules. |
+
+See the detailed [feature list](#2-features), [architecture](#3-architecture) and
+[API reference](docs/API.md).
+
+**Quick start:** install Node.js 18+ and PostgreSQL 13+, then follow the
+[installation steps](#8-installation). The demo seed provides sample accounts,
+and the mock AI provider works without an external API key. For database setup
+and deployment options, see the [PostgreSQL guide](#6-postgresql-setup) and
+[deployment guide](docs/DEPLOYMENT.md).
 
 ---
 
