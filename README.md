@@ -1,7 +1,10 @@
 <p align="center">
-  <strong>SMART EDU</strong><br>
-  <strong>Smarter management. Better insights. Personalised education.</strong><br>
-  One academic record connecting students, parents, teachers and administrators.
+  <img src="docs/assets/smart-edu-banner.svg?v=1" alt="Smart Edu — Smarter management. Better insights. Personalised education." width="100%">
+</p>
+
+<p align="center">
+  <strong>One academic record for clearer decisions and better support.</strong><br>
+  Role-based tools for students, parents, teachers and administrators, with student-controlled parent sharing.
 </p>
 
 <p align="center">
